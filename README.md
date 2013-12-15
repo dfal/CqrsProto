@@ -1,0 +1,4 @@
+CqrsProto
+=========
+
+Prototyping CQRS
