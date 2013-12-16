@@ -3,6 +3,6 @@
 	public interface IMementoOriginator
 	{
 		IMemento TakeSnapshot();
-		void RestoreSnapshot();
+		void RestoreSnapshot(IMemento snapshot);
 	}
 }

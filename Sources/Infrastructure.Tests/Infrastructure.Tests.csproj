@@ -50,6 +50,7 @@
   <ItemGroup>
     <Compile Include="EventSourcing\EventSourcedFixture.cs" />
     <Compile Include="EventSourcing\EventSourcedRepositoryFixture.cs" />
+    <Compile Include="Properties\Annotations.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

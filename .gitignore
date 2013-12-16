@@ -108,3 +108,4 @@ Backup*/
 UpgradeLog*.XML
 
 Build/Temp/NuGet.exe
+Sources/CqrsProto.sln.DotSettings
