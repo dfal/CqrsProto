@@ -34,7 +34,7 @@ namespace Infrastructure.Tests.EventSourcing
 				new TestEventText { Text = "2", SourceVersion = 4 }, 
 				new TestEventText { Text = "3", SourceVersion = 5 }, 
 				new TestEventNumber { Number = 5, SourceVersion = 6 }, 
-				new TestEventText { Text = "8", SourceVersion = 7 }, 
+				new TestEventText { Text = "8", SourceVersion = 7 }
 			});
 
 			test.Version.Should().Be(7);
@@ -72,6 +72,7 @@ namespace Infrastructure.Tests.EventSourcing
 		public TestEventSourced(Guid id)
 			: base(id)
 		{
+			Handles<TestEventCreated>(e => { Number = e.Number; Text = e.Text; });
 			Handles<TestEventNumber>(e => Number = e.Number);
 			Handles<TestEventText>(e => Text = e.Text);
 		}

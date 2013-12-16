@@ -61,8 +61,88 @@ namespace Infrastructure.Tests.EventSourcing
 
 		class CorrectEventSourced : EventSourced
 		{
+			public int Value { get; protected set; }
+
 			public CorrectEventSourced(Guid id) : base(id)
-			{}
+			{
+				Handles<Created>(OnCreated);
+				Handles<Updated>(OnUpdated);
+			}
+
+			public CorrectEventSourced(int value) :
+				this(Guid.NewGuid())
+			{
+				Apply(new Created { Value = value });
+			}
+
+			public void Update(int newValue)
+			{
+				if (Value == newValue) return;
+				
+				Apply(new Updated
+				{
+					OldValue = Value,
+					NewValue = newValue
+				});
+			}
+
+			void OnCreated(Created @event)
+			{
+				Value = @event.Value;
+			}
+
+			void OnUpdated(Updated @event)
+			{
+				Value = @event.NewValue;
+			}
+
+			public class Created : IEvent
+			{
+				public Guid SourceId { get; set; }
+				public int SourceVersion { get; set; }
+
+				public int Value { get; set; }
+			}
+
+			public class Updated : IEvent
+			{
+				public Guid SourceId { get; set; }
+				public int SourceVersion { get; set; }
+
+				public int OldValue { get; set; }
+				public int NewValue { get; set; }
+			}
+		}
+
+		class MementoOriginator : CorrectEventSourced, IMementoOriginator
+		{
+			public MementoOriginator(Guid id) : base(id)
+			{ }
+
+			public MementoOriginator(int value) : base(value)
+			{ }
+
+			public IMemento TakeSnapshot()
+			{
+				return new Memento
+				{
+					SourceId = this.Id,
+					Version = this.Version,
+					Value = this.Value
+				};
+			}
+
+			public void RestoreSnapshot(IMemento snapshot)
+			{
+				Value = ((Memento) snapshot).Value;
+			}
+
+			class Memento : IMemento
+			{
+				public int Value { get; set; }
+				public Guid SourceId { get; set; }
+				public int Version { get; set; }
+			}
 		}
 
 		[UsedImplicitly]
