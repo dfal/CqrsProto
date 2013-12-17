@@ -86,8 +86,9 @@ namespace Infrastructure.EventSourcing
 			var serialized = events.Select(e => new EventData
 			{
 				SourceId = e.SourceId.ToString(),
-				Version = e.SourceVersion,
+				SourceVersion = e.SourceVersion,
 				SourceType = SourceType,
+				EventType = e.GetType().Name,
 				CorrelationId = correlationId,
 				Payload = serializer.Serialize(e),
 			});

@@ -12,7 +12,7 @@ namespace Infrastructure.EventSourcing
 	public sealed class EventData
 	{
 		public string SourceId { get; set; }
-		public int Version { get; set; }
+		public int SourceVersion { get; set; }
 		public string SourceType { get; set; }
 		public byte[] Payload { get; set; }
 		public string CorrelationId { get; set; }

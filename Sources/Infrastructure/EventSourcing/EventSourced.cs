@@ -17,7 +17,7 @@ namespace Infrastructure.EventSourcing
 		
 		public Guid Id { get; private set; }
 		
-		public int Version { get; private set; }
+		public int Version { get; protected set; }
 
 		public IEvent[] Flush()
 		{
