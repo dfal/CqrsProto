@@ -55,8 +55,8 @@ namespace Infrastructure.Tests.EventSourcing
 			var deserializedEvents = new IEvent[]
 			{
 				new CorrectEventSourced.Created { SourceId = entityId, SourceVersion = events[0].SourceVersion, Value = 1 },
-				new CorrectEventSourced.Updated { SourceId = entityId, SourceVersion = events[1].SourceVersion, OldValue = 1, NewValue = 20 },
-				new CorrectEventSourced.Updated { SourceId = entityId, SourceVersion = events[2].SourceVersion, OldValue = 20, NewValue = 30 }
+				new CorrectEventSourced.Updated { SourceId = entityId, SourceVersion = events[1].SourceVersion, Value = 20 },
+				new CorrectEventSourced.Updated { SourceId = entityId, SourceVersion = events[2].SourceVersion, Value = 30 }
 			};
 
 			var serializerMock = new Mock<ISerializer>();
@@ -68,7 +68,7 @@ namespace Infrastructure.Tests.EventSourcing
 
 			entity.Id.Should().Be(entityId);
 			entity.Version.Should().Be(deserializedEvents.Last().SourceVersion);
-			entity.Value.Should().Be(deserializedEvents.Cast<dynamic>().Last().NewValue);
+			entity.Value.Should().Be(deserializedEvents.Cast<dynamic>().Last().Value);
 		}
 
 		[Test]
@@ -105,8 +105,8 @@ namespace Infrastructure.Tests.EventSourcing
 
 			var deserializedEvents = new []
 			{
-				new CorrectEventSourced.Updated { SourceId = entityId, SourceVersion = events[0].SourceVersion, OldValue = 30, NewValue = 40 },
-				new CorrectEventSourced.Updated { SourceId = entityId, SourceVersion = events[1].SourceVersion, OldValue = 40, NewValue = 50 }
+				new CorrectEventSourced.Updated { SourceId = entityId, SourceVersion = events[0].SourceVersion, Value = 40 },
+				new CorrectEventSourced.Updated { SourceId = entityId, SourceVersion = events[1].SourceVersion, Value = 50 }
 			};
 
 			var eventStoreMock = new Mock<IEventStore>();
@@ -124,7 +124,7 @@ namespace Infrastructure.Tests.EventSourcing
 
 			entity.Id.Should().Be(entityId);
 			entity.Version.Should().Be(deserializedEvents.Last().SourceVersion);
-			entity.Value.Should().Be(deserializedEvents.Last().NewValue);
+			entity.Value.Should().Be(deserializedEvents.Last().Value);
 		}
 
 		[Test]
@@ -221,10 +221,8 @@ namespace Infrastructure.Tests.EventSourcing
 			};
 
 			var serializerMock = new Mock<ISerializer>();
-			serializerMock.Setup(serializer => serializer.Serialize(It.IsAny<IEvent>())).Returns((IEvent @event) => new[]
-			{
-				@event is CorrectEventSourced.Created ? (byte)((CorrectEventSourced.Created)@event).Value : (byte)((CorrectEventSourced.Updated)@event).NewValue
-			});
+			serializerMock.Setup(serializer => serializer.Serialize(It.IsAny<IEvent>()))
+				.Returns((dynamic @event) => new[] { (byte)@event.Value });
 
 			EventData[] storedEvents = null;
 			var eventStoreMock = new Mock<IEventStore>();
@@ -253,6 +251,7 @@ namespace Infrastructure.Tests.EventSourcing
 		{
 			public int Value { get; protected set; }
 
+			[UsedImplicitly]
 			public CorrectEventSourced(Guid id)
 				: base(id)
 			{
@@ -272,8 +271,7 @@ namespace Infrastructure.Tests.EventSourcing
 
 				Apply(new Updated
 				{
-					OldValue = Value,
-					NewValue = newValue
+					Value = newValue
 				});
 			}
 
@@ -284,7 +282,7 @@ namespace Infrastructure.Tests.EventSourcing
 
 			void OnUpdated(Updated @event)
 			{
-				Value = @event.NewValue;
+				Value = @event.Value;
 			}
 
 			public class Created : IEvent
@@ -300,8 +298,7 @@ namespace Infrastructure.Tests.EventSourcing
 				public Guid SourceId { get; set; }
 				public int SourceVersion { get; set; }
 
-				public int OldValue { get; set; }
-				public int NewValue { get; set; }
+				public int Value { get; set; }
 			}
 		}
 
