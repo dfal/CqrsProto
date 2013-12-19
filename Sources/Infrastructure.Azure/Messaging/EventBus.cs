@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using Infrastructure.Messaging;
+using Infrastructure.Serialization;
 using Microsoft.ServiceBus.Messaging;
 
 namespace Infrastructure.Azure.Messaging
@@ -9,9 +10,9 @@ namespace Infrastructure.Azure.Messaging
 	{
 		private readonly IMessageSender sender;
 		private readonly IMetadataProvider metadataProvider;
-		private readonly ITextSerializer serializer;
+		private readonly ISerializer serializer;
 
-		public EventBus(IMessageSender sender, IMetadataProvider metadataProvider, ITextSerializer serializer)
+		public EventBus(IMessageSender sender, IMetadataProvider metadataProvider, ISerializer serializer)
 		{
 			this.sender = sender;
 			this.metadataProvider = metadataProvider;
@@ -27,7 +28,7 @@ namespace Infrastructure.Azure.Messaging
 
 	static class MessageFactory
 	{
-		public static BrokeredMessage Create(Envelope<IEvent> envelope, IDictionary<string, string> metadata, ITextSerializer serializer)
+		public static BrokeredMessage Create(Envelope<IEvent> envelope, IDictionary<string, string> metadata, ISerializer serializer)
 		{
 			return Create(serializer, envelope.Message)
 				.FillSessionId(envelope.Message.SourceId.ToString())
@@ -76,14 +77,13 @@ namespace Infrastructure.Azure.Messaging
 			return message;
 		}
 
-		private static BrokeredMessage Create(ITextSerializer serializer, IEvent @event)
+		private static BrokeredMessage Create(ISerializer serializer, IEvent @event)
 		{
 			BrokeredMessage message;
 			var stream = new MemoryStream();
 			try
 			{
-				var writer = new StreamWriter(stream);
-				serializer.Serialize(writer, @event);
+				serializer.Serialize(stream, @event);
 				stream.Position = 0;
 
 				message = new BrokeredMessage(stream, true);

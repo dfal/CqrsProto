@@ -27,6 +27,14 @@ namespace Infrastructure.Serialization
 			}
 		}
 
+		public void Serialize(Stream output, object graph)
+		{
+			using (JsonWriter jsonWriter = new JsonTextWriter(new StreamWriter(output, Encoding.UTF8)))
+			{
+				Serializer.Serialize(jsonWriter, graph);
+			}
+		}
+
 		public object Deserialize(byte[] serilized)
 		{
 			using (var stream = new MemoryStream(serilized))
@@ -35,15 +43,7 @@ namespace Infrastructure.Serialization
 			}
 		}
 
-		static void Serialize(Stream output, object graph)
-		{
-			using (JsonWriter jsonWriter = new JsonTextWriter(new StreamWriter(output, Encoding.UTF8)))
-			{
-				Serializer.Serialize(jsonWriter, graph);
-			}
-		}
-
-		static object Deserialize(Stream input)
+		public object Deserialize(Stream input)
 		{
 			using (var jsonReader = new JsonTextReader(new StreamReader(input, Encoding.UTF8)))
 			{
