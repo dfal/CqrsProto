@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Infrastructure.Messaging;
 
@@ -12,6 +13,8 @@ namespace Infrastructure.EventSourcing
 
 		protected EventSourced(Guid id)
 		{
+			Debug.Assert(id != Guid.Empty);
+
 			Id = id;
 		}
 		
@@ -24,23 +27,27 @@ namespace Infrastructure.EventSourcing
 			var events = pendingEvents.ToArray();
 			pendingEvents.Clear();
 			
-			Version += events.Length;
-			
 			return events;
 		}
 
 		public void Restore(IEnumerable<IEvent> history)
 		{
+			Debug.Assert(history != null);
+
 			foreach (var @event in history) Raise(@event);
 		}
 
 		protected void Handles<T>(Action<T> handler) where T : IEvent
 		{
+			Debug.Assert(handler != null);
+
 			handlers.Add(typeof(T), @event => handler((T)@event));
 		}
 
 		protected void Apply(IEvent @event)
 		{
+			Debug.Assert(@event != null);
+
 			@event.SourceId = Id;
 			@event.SourceVersion = Version + 1;
 			
@@ -51,6 +58,8 @@ namespace Infrastructure.EventSourcing
 
 		void Raise(IEvent @event)
 		{
+			Debug.Assert(@event != null);
+
 			Action<IEvent> handler;
 			
 			if (handlers.TryGetValue(@event.GetType(), out handler))

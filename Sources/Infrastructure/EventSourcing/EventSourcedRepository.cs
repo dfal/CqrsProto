@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using Infrastructure.Messaging;
 using Infrastructure.Serialization;
@@ -31,17 +32,23 @@ namespace Infrastructure.EventSourcing
 			{
 				GetSnapshotFunc = (store, id, maxValue) => null;
 			}
-		} 
+		}
 
 		public EventSourcedRepository(IEventStore eventStore, ISerializer serializer)
-			: this(eventStore, serializer, null)
-		{}
+		{
+			Debug.Assert(eventStore != null);
+			Debug.Assert(serializer != null);
+
+			this.eventStore = eventStore;
+			this.serializer = serializer;
+		}
 
 		public EventSourcedRepository(IEventStore eventStore, ISerializer serializer, ISnapshotStore snapshotStore)
+			: this(eventStore, serializer)
 		{
-			this.eventStore = eventStore;
-			this.snapshotStore = snapshotStore;
-			this.serializer = serializer;
+			Debug.Assert(snapshotStore != null);
+
+			this.snapshotStore = snapshotStore;	
 		}
 
 		public T Find(Guid id)
@@ -82,6 +89,9 @@ namespace Infrastructure.EventSourcing
 
 		public void Save(T eventSourced, string correlationId)
 		{
+			Debug.Assert(eventSourced != null);
+			Debug.Assert(!string.IsNullOrEmpty(correlationId));
+
 			var events = eventSourced.Flush();
 			var serialized = events.Select(e => new EventData
 			{

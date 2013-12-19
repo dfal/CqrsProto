@@ -60,6 +60,8 @@ namespace Infrastructure.Tests.EventSourcing
 				new TestEventNumber { SourceId = test.Id, SourceVersion = 4, Number = 4 }
 			});
 
+			test.Version.Should().Be(pendingEvents.Length);
+
 			test.Flush().Length.Should().Be(0);
 		}
 	}
