@@ -1,6 +1,6 @@
 ﻿namespace Infrastructure.Messaging
 {
-	interface IEventBus
+	public interface IEventBus
 	{
 		void Publish(Envelope<IEvent> @event);
 	}

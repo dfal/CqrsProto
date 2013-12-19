@@ -1,6 +1,6 @@
 ﻿namespace Infrastructure.Messaging
 {
-	interface ICommandBus
+	public interface ICommandBus
 	{
 		void Send(Envelope<ICommand> command);
 	}
