@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 
 namespace Infrastructure.Serialization
 {
@@ -8,8 +9,8 @@ namespace Infrastructure.Serialization
 
 		void Serialize(Stream output, object graph);
 
-		object Deserialize(byte[] serilized);
+		object Deserialize(byte[] serilized, Type objecType);
 
-		object Deserialize(Stream input);
+		object Deserialize(Stream input, Type objectType);
 	}
 }

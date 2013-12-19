@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Text;
 using Newtonsoft.Json;
 
@@ -12,7 +13,7 @@ namespace Infrastructure.Serialization
 		{
 			Serializer = new Newtonsoft.Json.JsonSerializer
 			{
-				TypeNameHandling = TypeNameHandling.Auto,
+				TypeNameHandling = TypeNameHandling.None,
 				DefaultValueHandling = DefaultValueHandling.Ignore,
 				NullValueHandling = NullValueHandling.Ignore
 			};
@@ -35,19 +36,19 @@ namespace Infrastructure.Serialization
 			}
 		}
 
-		public object Deserialize(byte[] serilized)
+		public object Deserialize(byte[] serilized, Type objectType)
 		{
 			using (var stream = new MemoryStream(serilized))
 			{
-				return Deserialize(stream);
+				return Deserialize(stream, objectType);
 			}
 		}
 
-		public object Deserialize(Stream input)
+		public object Deserialize(Stream input, Type objectType)
 		{
 			using (var jsonReader = new JsonTextReader(new StreamReader(input, Encoding.UTF8)))
 			{
-				return Serializer.Deserialize(jsonReader);
+				return Serializer.Deserialize(jsonReader, objectType);
 			}
 		}
 	}

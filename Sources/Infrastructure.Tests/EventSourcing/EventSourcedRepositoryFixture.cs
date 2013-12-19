@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using FluentAssertions;
 using Infrastructure.EventSourcing;
@@ -29,7 +30,8 @@ namespace Infrastructure.Tests.EventSourcing
 					SourceVersion = 1,
 					SourceType = "CorrectEventSourced",
 					EventType = "CorrectEventSourced.Created",
-					Payload = new byte[] {0}
+					Payload = new byte[] {0},
+					Metadata = new byte[] {0}
 				},
 				new EventData
 				{
@@ -37,7 +39,8 @@ namespace Infrastructure.Tests.EventSourcing
 					SourceVersion = 2,
 					SourceType = "CorrectEventSourced",
 					EventType = "CorrectEventSourced.Updated",
-					Payload = new byte[] {1}
+					Payload = new byte[] {1},
+					Metadata = new byte[] {1}
 				},
 				new EventData
 				{
@@ -45,7 +48,8 @@ namespace Infrastructure.Tests.EventSourcing
 					SourceVersion = 3,
 					SourceType = "CorrectEventSourced",
 					EventType = "CorrectEventSourced.Updated",
-					Payload = new byte[] {2}
+					Payload = new byte[] {2},
+					Metadata = new byte[] {2}
 				},
 			};
 			
@@ -60,7 +64,17 @@ namespace Infrastructure.Tests.EventSourcing
 			};
 
 			var serializerMock = new Mock<ISerializer>();
-			serializerMock.Setup(serializer => serializer.Deserialize(It.IsAny<byte[]>())).Returns((byte[] bytes) => deserializedEvents[bytes.First()]);
+			
+			serializerMock.Setup(serializer => serializer.Deserialize(It.IsAny<byte[]>(), It.Is<Type>(t => t == typeof(NameValueCollection))))
+				.Returns((byte[] bytes, Type objectType) => new NameValueCollection
+				{
+					{ "SourceClrTypeName", typeof(CorrectEventSourced).AssemblyQualifiedName },
+					{ "EventClrTypeName", deserializedEvents[bytes.First()].GetType().AssemblyQualifiedName }
+				});
+
+			serializerMock.Setup(serializer => serializer.Deserialize(It.IsAny<byte[]>(), It.Is<Type>(t => typeof(IEvent).IsAssignableFrom(t))))
+				.Returns((byte[] bytes, Type objectType) => deserializedEvents[bytes.First()])
+				.Callback((byte[] bytes, Type objectType) => objectType.Should().Be(deserializedEvents[bytes.First()].GetType()));
 
 			var repository = new EventSourcedRepository<CorrectEventSourced>(eventStoreMock.Object, serializerMock.Object);
 
@@ -91,7 +105,8 @@ namespace Infrastructure.Tests.EventSourcing
 					SourceVersion = snapshot.Version + 1,
 					SourceType = "CorrectEventSourced",
 					EventType = "CorrectEventSourced.Updated",
-					Payload = new byte[] {0}
+					Payload = new byte[] {0},
+					Metadata = new byte[] {0}
 				},
 				new EventData
 				{
@@ -99,7 +114,8 @@ namespace Infrastructure.Tests.EventSourcing
 					SourceVersion = snapshot.Version + 2,
 					SourceType = "CorrectEventSourced",
 					EventType = "CorrectEventSourced.Updated",
-					Payload = new byte[] {1}
+					Payload = new byte[] {1},
+					Metadata = new byte[] {1}
 				}
 			};
 
@@ -113,7 +129,16 @@ namespace Infrastructure.Tests.EventSourcing
 			eventStoreMock.Setup(eventStore => eventStore.Load(entityId, snapshot.Version + 1)).Returns(events);
 
 			var serializerMock = new Mock<ISerializer>();
-			serializerMock.Setup(serializer => serializer.Deserialize(It.IsAny<byte[]>())).Returns((byte[] bytes) => deserializedEvents[bytes.First()]);
+			serializerMock.Setup(serializer => serializer.Deserialize(It.IsAny<byte[]>(), It.Is<Type>(t => t == typeof (NameValueCollection))))
+				.Returns((byte[] bytes, Type objectType) => new NameValueCollection
+				{
+					{ "SourceClrTypeName", typeof(CorrectEventSourced).AssemblyQualifiedName },
+					{ "EventClrTypeName", deserializedEvents[bytes.First()].GetType().AssemblyQualifiedName }
+				});
+
+			serializerMock.Setup(serializer => serializer.Deserialize(It.IsAny<byte[]>(), It.Is<Type>(t => typeof(IEvent).IsAssignableFrom(t))))
+				.Returns((byte[] bytes, Type objectType) => deserializedEvents[bytes.First()])
+				.Callback((byte[] bytes, Type objectType) => objectType.Should().Be(deserializedEvents[bytes.First()].GetType()));
 
 			var snapshotStoreMock = new Mock<ISnapshotStore>();
 			snapshotStoreMock.Setup(snapshotStore => snapshotStore.Get(entityId, int.MaxValue)).Returns(() => snapshot);
@@ -198,6 +223,7 @@ namespace Infrastructure.Tests.EventSourcing
 					EventType = typeof(CorrectEventSourced.Created).Name,
 					SourceType = typeof(CorrectEventSourced).Name,
 					Payload = new byte[] {42},
+					Metadata = new byte[0],
 					CorrelationId = correlationId
 				},
 				new EventData
@@ -207,6 +233,7 @@ namespace Infrastructure.Tests.EventSourcing
 					EventType = typeof(CorrectEventSourced.Updated).Name,
 					SourceType = typeof(CorrectEventSourced).Name,
 					Payload = new byte[] {43},
+					Metadata = new byte[0],
 					CorrelationId = correlationId
 				},
 				new EventData
@@ -216,16 +243,44 @@ namespace Infrastructure.Tests.EventSourcing
 					EventType = typeof(CorrectEventSourced.Updated).Name,
 					SourceType = typeof(CorrectEventSourced).Name,
 					Payload = new byte[] {44},
+					Metadata = new byte[0],
 					CorrelationId = correlationId
 				},
 			};
 
+			var expectedHeaders = new []
+			{
+				new NameValueCollection
+				{
+					{ "SourceClrTypeName", typeof(CorrectEventSourced).AssemblyQualifiedName },
+					{ "EventClrTypeName", typeof(CorrectEventSourced.Created).AssemblyQualifiedName }
+				},
+				new NameValueCollection
+				{
+					{ "SourceClrTypeName", typeof(CorrectEventSourced).AssemblyQualifiedName },
+					{ "EventClrTypeName", typeof(CorrectEventSourced.Updated).AssemblyQualifiedName }
+				},
+				new NameValueCollection
+				{
+					{ "SourceClrTypeName", typeof(CorrectEventSourced).AssemblyQualifiedName },
+					{ "EventClrTypeName", typeof(CorrectEventSourced.Updated).AssemblyQualifiedName }
+				}
+			};
+
 			var serializerMock = new Mock<ISerializer>();
+			var headersCollection = new List<NameValueCollection>();
+			
+			serializerMock.Setup(serializer => serializer.Serialize(
+				It.IsAny<NameValueCollection>()))
+				.Returns(new byte[0])
+				.Callback((NameValueCollection headers) => headersCollection.Add(headers));
+
 			serializerMock.Setup(serializer => serializer.Serialize(It.IsAny<IEvent>()))
 				.Returns((dynamic @event) => new[] { (byte)@event.Value });
 
 			EventData[] storedEvents = null;
 			var eventStoreMock = new Mock<IEventStore>();
+			
 			eventStoreMock.Setup(eventStore => eventStore.Save(entity.Id, It.IsAny<IEnumerable<EventData>>()))
 				.Callback<Guid, IEnumerable<EventData>>((id, events) => storedEvents = events.ToArray());
 
@@ -234,6 +289,8 @@ namespace Infrastructure.Tests.EventSourcing
 			repository.Save(entity, correlationId);
 
 			storedEvents.ShouldBeEquivalentTo(expectedEvents);
+
+			headersCollection.ToArray().ShouldAllBeEquivalentTo(expectedHeaders);
 		}
 
 		[Test]

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Linq;
 using Infrastructure.Messaging;
@@ -11,8 +12,12 @@ namespace Infrastructure.EventSourcing
 		where T : class, IEventSourced
 	{
 		static readonly string SourceType;
+		static readonly string SourceClrTypeName;
 		static readonly Func<Guid, T> EntityFactory;
 		static readonly Func<ISnapshotStore, Guid, int, IMemento> GetSnapshotFunc;
+
+		const string SourceClrTypeHeader = "SourceClrTypeName";
+		const string EventClrTypeHeader = "EventClrTypeName";
 		
 		readonly IEventStore eventStore;
 		readonly ISnapshotStore snapshotStore;
@@ -20,11 +25,13 @@ namespace Infrastructure.EventSourcing
 
 		static EventSourcedRepository()
 		{
-			SourceType = typeof (T).Name;
+			var sourceType = typeof (T);
+			SourceType = sourceType.Name;
+			SourceClrTypeName = sourceType.AssemblyQualifiedName;
 
 			EntityFactory = GetEntityFactory();
 			
-			if (typeof (IMementoOriginator).IsAssignableFrom(typeof (T)))
+			if (typeof (IMementoOriginator).IsAssignableFrom(sourceType))
 			{
 				GetSnapshotFunc = (store, id, maxVersion) => store != null ? store.Get(id, maxVersion) : null;
 			}
@@ -61,7 +68,7 @@ namespace Infrastructure.EventSourcing
 				minVersion = snapshot.Version + 1;
 
 			var events = eventStore.Load(id, minVersion)
-				.Select(x => (IEvent) serializer.Deserialize(x.Payload))
+				.Select(x => (IEvent) serializer.Deserialize(x.Payload, GetEventType(x.Metadata)))
 				.AsCachedAnyEnumerable();
 
 			if (snapshot == null && !events.Any()) return null;
@@ -101,9 +108,21 @@ namespace Infrastructure.EventSourcing
 				EventType = e.GetType().Name,
 				CorrelationId = correlationId,
 				Payload = serializer.Serialize(e),
+				Metadata = serializer.Serialize(new NameValueCollection
+				{
+					{ SourceClrTypeHeader, SourceClrTypeName },
+					{ EventClrTypeHeader, e.GetType().AssemblyQualifiedName }
+				})
 			});
 
 			eventStore.Save(eventSourced.Id, serialized);
+		}
+
+		Type GetEventType(byte[] metadata)
+		{
+			var headers = (NameValueCollection)serializer.Deserialize(metadata, typeof (NameValueCollection));
+			
+			return Type.GetType(headers[EventClrTypeHeader]);
 		}
 
 		static Func<Guid, T> GetEntityFactory()
