@@ -77,7 +77,6 @@
     <Compile Include="Messaging\EventBus.cs" />
     <Compile Include="Messaging\ServiceBusSettings.cs" />
     <Compile Include="Messaging\TopicSender.cs" />
-    <Compile Include="InfrastructureSettings.cs" />
     <Compile Include="Messaging\ServiceBusConfig.cs" />
     <Compile Include="EventSourcing\EventStore.cs" />
     <Compile Include="Messaging\IMessageSender.cs" />
