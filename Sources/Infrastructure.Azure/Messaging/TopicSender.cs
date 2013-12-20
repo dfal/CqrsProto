@@ -23,9 +23,24 @@ namespace Infrastructure.Azure.Messaging
 				if (task.Exception != null)
 				{
 					// A non-transient exception occurred or retry limit has been reached;
-					// Put message logging here;
+					// TODO:Put message logging here;
+					throw task.Exception;
 				}
 			}));
+		}
+
+		public void Send(Func<BrokeredMessage> messageFactory)
+		{
+			try
+			{
+				retryPolicy.ExecuteAction(() => topicClient.Send(messageFactory()));
+			}
+			catch(Exception)
+			{
+				// A non-transient exception occurred or retry limit has been reached;
+				// TODO: Put message logging here;
+				throw;
+			}
 		}
 	}
 }
