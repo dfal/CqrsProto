@@ -16,9 +16,9 @@ namespace Infrastructure.Azure.Messaging
 			topicClient = TopicClient.CreateFromConnectionString(settings.ConnectionString, topic);
 		}
 
-		public void SendAsync(Func<BrokeredMessage> messageFactory)
+		public void SendAsync(BrokeredMessage message)
 		{
-			retryPolicy.ExecuteAsync(() => topicClient.SendAsync(messageFactory()).ContinueWith(task =>
+			retryPolicy.ExecuteAsync(() => topicClient.SendAsync(message).ContinueWith(task =>
 			{
 				if (task.Exception != null)
 				{
@@ -29,11 +29,11 @@ namespace Infrastructure.Azure.Messaging
 			}));
 		}
 
-		public void Send(Func<BrokeredMessage> messageFactory)
+		public void Send(BrokeredMessage message)
 		{
 			try
 			{
-				retryPolicy.ExecuteAction(() => topicClient.Send(messageFactory()));
+				retryPolicy.ExecuteAction(() => topicClient.Send(message));
 			}
 			catch(Exception)
 			{
