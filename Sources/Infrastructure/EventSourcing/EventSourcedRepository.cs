@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Specialized;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using Infrastructure.Messaging;
-using Infrastructure.Serialization;
 using Infrastructure.Utils;
 
 namespace Infrastructure.EventSourcing
@@ -12,22 +9,18 @@ namespace Infrastructure.EventSourcing
 		where T : class, IEventSourced
 	{
 		static readonly string SourceType;
-		static readonly string SourceClrTypeName;
+		
 		static readonly Func<Guid, T> EntityFactory;
 		static readonly Func<ISnapshotStore, Guid, int, IMemento> GetSnapshotFunc;
 
-		const string SourceClrTypeHeader = "SourceClrTypeName";
-		const string EventClrTypeHeader = "EventClrTypeName";
-		
 		readonly IEventStore eventStore;
 		readonly ISnapshotStore snapshotStore;
-		readonly ISerializer serializer;
 
 		static EventSourcedRepository()
 		{
 			var sourceType = typeof (T);
+			
 			SourceType = sourceType.Name;
-			SourceClrTypeName = sourceType.AssemblyQualifiedName;
 
 			EntityFactory = GetEntityFactory();
 			
@@ -41,21 +34,19 @@ namespace Infrastructure.EventSourcing
 			}
 		}
 
-		public EventSourcedRepository(IEventStore eventStore, ISerializer serializer)
+		public EventSourcedRepository(IEventStore eventStore)
 		{
 			Debug.Assert(eventStore != null);
-			Debug.Assert(serializer != null);
-
+			
 			this.eventStore = eventStore;
-			this.serializer = serializer;
 		}
 
-		public EventSourcedRepository(IEventStore eventStore, ISerializer serializer, ISnapshotStore snapshotStore)
-			: this(eventStore, serializer)
+		public EventSourcedRepository(IEventStore eventStore, ISnapshotStore snapshotStore)
+			: this(eventStore)
 		{
 			Debug.Assert(snapshotStore != null);
 
-			this.snapshotStore = snapshotStore;	
+			this.snapshotStore = snapshotStore;
 		}
 
 		public T Find(Guid id)
@@ -67,9 +58,7 @@ namespace Infrastructure.EventSourcing
 			if (snapshot != null)
 				minVersion = snapshot.Version + 1;
 
-			var events = eventStore.Load(id, minVersion)
-				.Select(x => (IEvent) serializer.Deserialize(x.Payload, GetEventType(x.Metadata)))
-				.AsCachedAnyEnumerable();
+			var events = eventStore.Load(id, minVersion).AsCachedAnyEnumerable();
 
 			if (snapshot == null && !events.Any()) return null;
 
@@ -100,29 +89,13 @@ namespace Infrastructure.EventSourcing
 			Debug.Assert(!string.IsNullOrEmpty(correlationId));
 
 			var events = eventSourced.Flush();
-			var serialized = events.Select(e => new EventData
-			{
-				SourceId = e.SourceId.ToString(),
-				SourceVersion = e.SourceVersion,
-				SourceType = SourceType,
-				EventType = e.GetType().Name,
-				CorrelationId = correlationId,
-				Payload = serializer.Serialize(e),
-				Metadata = serializer.Serialize(new NameValueCollection
-				{
-					{ SourceClrTypeHeader, SourceClrTypeName },
-					{ EventClrTypeHeader, e.GetType().AssemblyQualifiedName }
-				})
-			});
-
-			eventStore.Save(eventSourced.Id, serialized);
-		}
-
-		Type GetEventType(byte[] metadata)
-		{
-			var headers = (NameValueCollection)serializer.Deserialize(metadata, typeof (NameValueCollection));
 			
-			return Type.GetType(headers[EventClrTypeHeader]);
+			eventStore.Save(eventSourced.Id, events, new Dictionary<string, string>
+			{
+				{"CorrelationId", correlationId},
+				{"SourceType", SourceType},
+				
+			});
 		}
 
 		static Func<Guid, T> GetEntityFactory()
