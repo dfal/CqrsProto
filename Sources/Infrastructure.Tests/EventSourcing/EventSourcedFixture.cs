@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using FluentAssertions;
 using Infrastructure.EventSourcing;
 using Infrastructure.Messaging;
@@ -24,9 +25,10 @@ namespace Infrastructure.Tests.EventSourcing
 		[Test]
 		public void Should_restore_from_history()
 		{
-			var test = new TestEventSourced(Guid.NewGuid());
+			var entityId = Guid.NewGuid();
+			var test = new TestEventSourced(entityId);
 			
-			test.Restore(new IEvent[]
+			var events = new IEvent[]
 			{
 				new TestEventCreated { SourceVersion = 1 }, 
 				new TestEventNumber { Number = 1, SourceVersion = 2 }, 
@@ -35,11 +37,36 @@ namespace Infrastructure.Tests.EventSourcing
 				new TestEventText { Text = "3", SourceVersion = 5 }, 
 				new TestEventNumber { Number = 5, SourceVersion = 6 }, 
 				new TestEventText { Text = "8", SourceVersion = 7 }
-			});
+			};
 
-			test.Version.Should().Be(7);
-			test.Number.Should().Be(5);
-			test.Text.Should().Be("8");
+			var commit1 = new Commit
+			{
+				Id = Guid.NewGuid(),
+				SourceId = entityId,
+				Changes = events.Take(2).ToArray()
+			};
+
+			var commit2 = new Commit
+			{
+				Id = Guid.NewGuid(),
+				ParentId = commit1.Id,
+				SourceId = entityId,
+				Changes = events.Skip(commit1.Changes.Length).Take(3).ToArray()
+			};
+
+			var commit3 = new Commit
+			{
+				Id = Guid.NewGuid(),
+				ParentId = commit2.Id,
+				SourceId = entityId,
+				Changes = events.Skip(commit1.Changes.Length + commit2.Changes.Length).ToArray()
+			};
+
+			test.Restore(new [] {commit1, commit2, commit3});
+
+			test.Version.Should().Be(events.Length);
+			test.Number.Should().Be(events.OfType<TestEventNumber>().Last().Number);
+			test.Text.Should().Be(events.OfType<TestEventText>().Last().Text);
 		}
 
 		[Test]

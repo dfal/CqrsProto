@@ -12,5 +12,9 @@ namespace Infrastructure.Serialization
 		object Deserialize(byte[] serilized, Type objecType);
 
 		object Deserialize(Stream input, Type objectType);
+
+		object Deserialize(byte[] serilized);
+
+		object Deserialize(Stream input);
 	}
 }

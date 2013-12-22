@@ -88,13 +88,17 @@ namespace Infrastructure.EventSourcing
 			Debug.Assert(eventSourced != null);
 			Debug.Assert(!string.IsNullOrEmpty(correlationId));
 
-			var events = eventSourced.Flush();
-			
-			eventStore.Save(eventSourced.Id, events, new Dictionary<string, string>
+			eventStore.Save(new Commit
 			{
-				{"CorrelationId", correlationId},
-				{"SourceType", SourceType},
-				
+				Id = Guid.NewGuid(),
+				ParentId = eventSourced.Head,
+				SourceId = eventSourced.Id,
+				SourceType = SourceType,
+				Changes = eventSourced.Flush(),
+				Metadata = new Dictionary<string, string>
+				{
+					{"CorrelationId", correlationId}
+				}
 			});
 		}
 

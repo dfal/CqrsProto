@@ -13,7 +13,7 @@ namespace Infrastructure.Serialization
 		{
 			Serializer = new Newtonsoft.Json.JsonSerializer
 			{
-				TypeNameHandling = TypeNameHandling.None,
+				TypeNameHandling = TypeNameHandling.All,
 				DefaultValueHandling = DefaultValueHandling.Ignore,
 				NullValueHandling = NullValueHandling.Ignore
 			};
@@ -49,6 +49,22 @@ namespace Infrastructure.Serialization
 			using (var jsonReader = new JsonTextReader(new StreamReader(input, Encoding.UTF8)))
 			{
 				return Serializer.Deserialize(jsonReader, objectType);
+			}
+		}
+
+		public object Deserialize(byte[] serilized)
+		{
+			using (var stream = new MemoryStream(serilized))
+			{
+				return Deserialize(stream);
+			}
+		}
+
+		public object Deserialize(Stream input)
+		{
+			using (var jsonReader = new JsonTextReader(new StreamReader(input, Encoding.UTF8)))
+			{
+				return Serializer.Deserialize(jsonReader);
 			}
 		}
 	}

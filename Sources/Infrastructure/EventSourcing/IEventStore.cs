@@ -6,7 +6,19 @@ namespace Infrastructure.EventSourcing
 {
 	public interface IEventStore
 	{
-		IEnumerable<IEvent> Load(Guid sourceId, int minVersion);
-		void Save(Guid sourceId, IEnumerable<IEvent> events, IDictionary<string, string> metadata);
+		IEnumerable<Commit> Load(Guid sourceId, int minVersion);
+		void Save(Commit commit);
+	}
+
+	public class Commit
+	{
+		public Guid Id { get; set; }
+		public Guid? ParentId { get; set; }
+
+		public Guid SourceId { get; set; }
+		public string SourceType { get; set; }
+
+		public IEvent[] Changes { get; set; }
+		public IDictionary<string, string> Metadata { get; set; }
 	}
 }

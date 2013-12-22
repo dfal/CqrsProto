@@ -44,6 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ConcurrencyException.cs" />
     <Compile Include="EntityNotFoundException.cs" />
     <Compile Include="EventSourcing\EventSourced.cs" />
     <Compile Include="EventSourcing\EventSourcedRepository.cs" />

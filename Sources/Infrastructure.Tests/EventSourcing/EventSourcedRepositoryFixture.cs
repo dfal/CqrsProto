@@ -1,19 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
 using FluentAssertions;
 using Infrastructure.EventSourcing;
 using Infrastructure.Messaging;
-using Infrastructure.Serialization;
 using Infrastructure.Tests.Annotations;
 using Moq;
 using NUnit.Framework;
 
 namespace Infrastructure.Tests.EventSourcing
 {
-	// ReSharper disable ImplicitlyCapturedClosure
-
 	[TestFixture]
 	public class EventSourcedRepositoryFixture
 	{
@@ -22,67 +18,30 @@ namespace Infrastructure.Tests.EventSourcing
 		{
 			var entityId = Guid.NewGuid();
 
-			var events = new[]
+			var events = new IEvent[]
 			{
-				new EventData
-				{
-					SourceId = entityId.ToString(),
-					SourceVersion = 1,
-					SourceType = "CorrectEventSourced",
-					EventType = "CorrectEventSourced.Created",
-					Payload = new byte[] {0},
-					Metadata = new byte[] {0}
-				},
-				new EventData
-				{
-					SourceId = entityId.ToString(),
-					SourceVersion = 2,
-					SourceType = "CorrectEventSourced",
-					EventType = "CorrectEventSourced.Updated",
-					Payload = new byte[] {1},
-					Metadata = new byte[] {1}
-				},
-				new EventData
-				{
-					SourceId = entityId.ToString(),
-					SourceVersion = 3,
-					SourceType = "CorrectEventSourced",
-					EventType = "CorrectEventSourced.Updated",
-					Payload = new byte[] {2},
-					Metadata = new byte[] {2}
-				},
+				new CorrectEventSourced.Created { SourceId = entityId, SourceVersion = 1, Value = 1 },
+				new CorrectEventSourced.Updated { SourceId = entityId, SourceVersion = 2, Value = 20 },
+				new CorrectEventSourced.Updated { SourceId = entityId, SourceVersion = 3, Value = 30 }
 			};
-			
+
+			var commit = new Commit
+			{
+				Id = Guid.NewGuid(),
+				SourceId = entityId,
+				Changes = events
+			};
+
 			var eventStoreMock = new Mock<IEventStore>();
-			eventStoreMock.Setup(eventStore => eventStore.Load(entityId, 0)).Returns(events);
+			eventStoreMock.Setup(eventStore => eventStore.Load(entityId, 0)).Returns(new [] { commit });
 
-			var deserializedEvents = new IEvent[]
-			{
-				new CorrectEventSourced.Created { SourceId = entityId, SourceVersion = events[0].SourceVersion, Value = 1 },
-				new CorrectEventSourced.Updated { SourceId = entityId, SourceVersion = events[1].SourceVersion, Value = 20 },
-				new CorrectEventSourced.Updated { SourceId = entityId, SourceVersion = events[2].SourceVersion, Value = 30 }
-			};
-
-			var serializerMock = new Mock<ISerializer>();
-			
-			serializerMock.Setup(serializer => serializer.Deserialize(It.IsAny<byte[]>(), It.Is<Type>(t => t == typeof(NameValueCollection))))
-				.Returns((byte[] bytes, Type objectType) => new NameValueCollection
-				{
-					{ "SourceClrTypeName", typeof(CorrectEventSourced).AssemblyQualifiedName },
-					{ "EventClrTypeName", deserializedEvents[bytes.First()].GetType().AssemblyQualifiedName }
-				});
-
-			serializerMock.Setup(serializer => serializer.Deserialize(It.IsAny<byte[]>(), It.Is<Type>(t => typeof(IEvent).IsAssignableFrom(t))))
-				.Returns((byte[] bytes, Type objectType) => deserializedEvents[bytes.First()])
-				.Callback((byte[] bytes, Type objectType) => objectType.Should().Be(deserializedEvents[bytes.First()].GetType()));
-
-			var repository = new EventSourcedRepository<CorrectEventSourced>(eventStoreMock.Object, serializerMock.Object);
+			var repository = new EventSourcedRepository<CorrectEventSourced>(eventStoreMock.Object);
 
 			var entity = repository.Find(entityId);
 
 			entity.Id.Should().Be(entityId);
-			entity.Version.Should().Be(deserializedEvents.Last().SourceVersion);
-			entity.Value.Should().Be(deserializedEvents.Cast<dynamic>().Last().Value);
+			entity.Version.Should().Be(events.Last().SourceVersion);
+			entity.Value.Should().Be(events.Cast<dynamic>().Last().Value);
 		}
 
 		[Test]
@@ -97,59 +56,32 @@ namespace Infrastructure.Tests.EventSourcing
 				Value = 30
 			};
 
-			var events = new[]
+			var events = new IEvent[]
 			{
-				new EventData
-				{
-					SourceId = entityId.ToString(),
-					SourceVersion = snapshot.Version + 1,
-					SourceType = "CorrectEventSourced",
-					EventType = "CorrectEventSourced.Updated",
-					Payload = new byte[] {0},
-					Metadata = new byte[] {0}
-				},
-				new EventData
-				{
-					SourceId = entityId.ToString(),
-					SourceVersion = snapshot.Version + 2,
-					SourceType = "CorrectEventSourced",
-					EventType = "CorrectEventSourced.Updated",
-					Payload = new byte[] {1},
-					Metadata = new byte[] {1}
-				}
+				new CorrectEventSourced.Updated { SourceId = entityId, SourceVersion = snapshot.Version + 1, Value = 40 },
+				new CorrectEventSourced.Updated { SourceId = entityId, SourceVersion = snapshot.Version + 2, Value = 50 }
 			};
 
-			var deserializedEvents = new []
+			var commit = new Commit
 			{
-				new CorrectEventSourced.Updated { SourceId = entityId, SourceVersion = events[0].SourceVersion, Value = 40 },
-				new CorrectEventSourced.Updated { SourceId = entityId, SourceVersion = events[1].SourceVersion, Value = 50 }
+				Id = Guid.NewGuid(),
+				SourceId = entityId,
+				Changes = events
 			};
-
-			var eventStoreMock = new Mock<IEventStore>();
-			eventStoreMock.Setup(eventStore => eventStore.Load(entityId, snapshot.Version + 1)).Returns(events);
-
-			var serializerMock = new Mock<ISerializer>();
-			serializerMock.Setup(serializer => serializer.Deserialize(It.IsAny<byte[]>(), It.Is<Type>(t => t == typeof (NameValueCollection))))
-				.Returns((byte[] bytes, Type objectType) => new NameValueCollection
-				{
-					{ "SourceClrTypeName", typeof(CorrectEventSourced).AssemblyQualifiedName },
-					{ "EventClrTypeName", deserializedEvents[bytes.First()].GetType().AssemblyQualifiedName }
-				});
-
-			serializerMock.Setup(serializer => serializer.Deserialize(It.IsAny<byte[]>(), It.Is<Type>(t => typeof(IEvent).IsAssignableFrom(t))))
-				.Returns((byte[] bytes, Type objectType) => deserializedEvents[bytes.First()])
-				.Callback((byte[] bytes, Type objectType) => objectType.Should().Be(deserializedEvents[bytes.First()].GetType()));
 
 			var snapshotStoreMock = new Mock<ISnapshotStore>();
 			snapshotStoreMock.Setup(snapshotStore => snapshotStore.Get(entityId, int.MaxValue)).Returns(() => snapshot);
 
-			var repository = new EventSourcedRepository<MementoOriginator>(eventStoreMock.Object, serializerMock.Object, snapshotStoreMock.Object);
+			var eventStoreMock = new Mock<IEventStore>();
+			eventStoreMock.Setup(eventStore => eventStore.Load(entityId, snapshot.Version + 1)).Returns(new[] { commit });
+
+			var repository = new EventSourcedRepository<MementoOriginator>(eventStoreMock.Object, snapshotStoreMock.Object);
 
 			var entity = repository.Find(entityId);
 
 			entity.Id.Should().Be(entityId);
-			entity.Version.Should().Be(deserializedEvents.Last().SourceVersion);
-			entity.Value.Should().Be(deserializedEvents.Last().Value);
+			entity.Version.Should().Be(events.Last().SourceVersion);
+			entity.Value.Should().Be(events.OfType<CorrectEventSourced.Updated>().Last().Value);
 		}
 
 		[Test]
@@ -165,12 +97,12 @@ namespace Infrastructure.Tests.EventSourcing
 			};
 
 			var eventStoreMock = new Mock<IEventStore>();
-			eventStoreMock.Setup(eventStore => eventStore.Load(entityId, snapshot.Version + 1)).Returns(Enumerable.Empty<EventData>);
+			eventStoreMock.Setup(eventStore => eventStore.Load(entityId, snapshot.Version + 1)).Returns(Enumerable.Empty<Commit>);
 
 			var snapshotStoreMock = new Mock<ISnapshotStore>();
 			snapshotStoreMock.Setup(snapshotStore => snapshotStore.Get(entityId, int.MaxValue)).Returns(() => snapshot);
 
-			var repository = new EventSourcedRepository<MementoOriginator>(eventStoreMock.Object, Mock.Of<ISerializer>(), snapshotStoreMock.Object);
+			var repository = new EventSourcedRepository<MementoOriginator>(eventStoreMock.Object, snapshotStoreMock.Object);
 
 			var entity = repository.Find(entityId);
 
@@ -183,9 +115,9 @@ namespace Infrastructure.Tests.EventSourcing
 		public void Find_should_return_null_when_there_are_no_evetns_with_specified_source_id()
 		{
 			var eventStoreMock = new Mock<IEventStore>();
-			eventStoreMock.Setup(eventStore => eventStore.Load(It.IsAny<Guid>(), 0)).Returns(Enumerable.Empty<EventData>);
+			eventStoreMock.Setup(eventStore => eventStore.Load(It.IsAny<Guid>(), 0)).Returns(Enumerable.Empty<Commit>);
 
-			var repository = new EventSourcedRepository<CorrectEventSourced>(eventStoreMock.Object, Mock.Of<ISerializer>());
+			var repository = new EventSourcedRepository<CorrectEventSourced>(eventStoreMock.Object);
 
 			repository.Find(Guid.NewGuid()).Should().BeNull();
 		}
@@ -194,9 +126,9 @@ namespace Infrastructure.Tests.EventSourcing
 		public void Get_should_throw_an_exception_when_there_are_no_evetns_with_specified_source_id()
 		{
 			var eventStoreMock = new Mock<IEventStore>();
-			eventStoreMock.Setup(eventStore => eventStore.Load(It.IsAny<Guid>(), 0)).Returns(new EventData[0]);
+			eventStoreMock.Setup(eventStore => eventStore.Load(It.IsAny<Guid>(), 0)).Returns(Enumerable.Empty<Commit>);
 
-			var repository = new EventSourcedRepository<CorrectEventSourced>(eventStoreMock.Object, Mock.Of<ISerializer>());
+			var repository = new EventSourcedRepository<CorrectEventSourced>(eventStoreMock.Object);
 
 			var id = Guid.NewGuid();
 			Action action = () => repository.Get(id);
@@ -214,90 +146,55 @@ namespace Infrastructure.Tests.EventSourcing
 
 			var correlationId = Guid.NewGuid().ToString();
 
-			var expectedEvents = new[]
+			var expectedEvents = new IEvent[]
 			{
-				new EventData
+				new CorrectEventSourced.Created
 				{
-					SourceId = entity.Id.ToString(),
+					SourceId = entity.Id,
 					SourceVersion = 1,
-					EventType = typeof(CorrectEventSourced.Created).Name,
-					SourceType = typeof(CorrectEventSourced).Name,
-					Payload = new byte[] {42},
-					Metadata = new byte[0],
-					CorrelationId = correlationId
+					Value = 42
 				},
-				new EventData
+				new CorrectEventSourced.Updated
 				{
-					SourceId = entity.Id.ToString(),
+					SourceId = entity.Id,
 					SourceVersion = 2,
-					EventType = typeof(CorrectEventSourced.Updated).Name,
-					SourceType = typeof(CorrectEventSourced).Name,
-					Payload = new byte[] {43},
-					Metadata = new byte[0],
-					CorrelationId = correlationId
+					Value = 43
 				},
-				new EventData
+				new CorrectEventSourced.Updated
 				{
-					SourceId = entity.Id.ToString(),
+					SourceId = entity.Id,
 					SourceVersion = 3,
-					EventType = typeof(CorrectEventSourced.Updated).Name,
-					SourceType = typeof(CorrectEventSourced).Name,
-					Payload = new byte[] {44},
-					Metadata = new byte[0],
-					CorrelationId = correlationId
+					Value = 44
 				},
 			};
 
-			var expectedHeaders = new []
+			var expectedMetadata = new Dictionary<string, string>
 			{
-				new NameValueCollection
-				{
-					{ "SourceClrTypeName", typeof(CorrectEventSourced).AssemblyQualifiedName },
-					{ "EventClrTypeName", typeof(CorrectEventSourced.Created).AssemblyQualifiedName }
-				},
-				new NameValueCollection
-				{
-					{ "SourceClrTypeName", typeof(CorrectEventSourced).AssemblyQualifiedName },
-					{ "EventClrTypeName", typeof(CorrectEventSourced.Updated).AssemblyQualifiedName }
-				},
-				new NameValueCollection
-				{
-					{ "SourceClrTypeName", typeof(CorrectEventSourced).AssemblyQualifiedName },
-					{ "EventClrTypeName", typeof(CorrectEventSourced.Updated).AssemblyQualifiedName }
-				}
+				{ "CorrelationId", correlationId }
 			};
 
-			var serializerMock = new Mock<ISerializer>();
-			var headersCollection = new List<NameValueCollection>();
-			
-			serializerMock.Setup(serializer => serializer.Serialize(
-				It.IsAny<NameValueCollection>()))
-				.Returns(new byte[0])
-				.Callback((NameValueCollection headers) => headersCollection.Add(headers));
-
-			serializerMock.Setup(serializer => serializer.Serialize(It.IsAny<IEvent>()))
-				.Returns((dynamic @event) => new[] { (byte)@event.Value });
-
-			EventData[] storedEvents = null;
 			var eventStoreMock = new Mock<IEventStore>();
-			
-			eventStoreMock.Setup(eventStore => eventStore.Save(entity.Id, It.IsAny<IEnumerable<EventData>>()))
-				.Callback<Guid, IEnumerable<EventData>>((id, events) => storedEvents = events.ToArray());
 
-			var repository = new EventSourcedRepository<CorrectEventSourced>(eventStoreMock.Object, serializerMock.Object);
+			Commit storedCommit = null;
+			eventStoreMock.Setup(eventStore => eventStore.Save(It.IsAny<Commit>()))
+				.Callback<Commit>(commit => storedCommit = commit);
+			
+			var repository = new EventSourcedRepository<CorrectEventSourced>(eventStoreMock.Object);
 
 			repository.Save(entity, correlationId);
 
-			storedEvents.ShouldBeEquivalentTo(expectedEvents);
-
-			headersCollection.ToArray().ShouldAllBeEquivalentTo(expectedHeaders);
+			storedCommit.Changes.ShouldBeEquivalentTo(expectedEvents);
+			storedCommit.Metadata.ShouldAllBeEquivalentTo(expectedMetadata);
+			storedCommit.Id.Should().NotBeEmpty();
+			storedCommit.SourceId.Should().Be(entity.Id);
+			storedCommit.SourceType.Should().Be(typeof (CorrectEventSourced).Name);
 		}
 
 		[Test]
 		public void Should_throw_an_exception_when_event_sourced_type_does_not_implement_required_constructor()
 		{
 			Action action = () =>
-				new EventSourcedRepository<IncorrectEventSourced>(new Mock<IEventStore>().Object, new Mock<ISerializer>().Object);
+				new EventSourcedRepository<IncorrectEventSourced>(new Mock<IEventStore>().Object);
 
 			action.ShouldThrow<TypeInitializationException>()
 				.WithInnerException<InvalidCastException>()
@@ -407,15 +304,15 @@ namespace Infrastructure.Tests.EventSourcing
 				get { return 0; }
 			}
 
+			public Guid Head { get; [UsedImplicitly] set; }
+
 			public IEvent[] Flush()
 			{
 				return new IEvent[0];
 			}
 
-			public void Restore(IEnumerable<IEvent> history)
+			public void Restore(IEnumerable<Commit> history)
 			{ }
 		}
-
-		// ReSharper restore ImplicitlyCapturedClosure
 	}
 }

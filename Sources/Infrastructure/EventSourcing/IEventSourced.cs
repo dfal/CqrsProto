@@ -12,6 +12,8 @@ namespace Infrastructure.EventSourcing
 
 		IEvent[] Flush();
 
-		void Restore(IEnumerable<IEvent> history);
+		void Restore(IEnumerable<Commit> history);
+
+		Guid Head { get; }
 	}
 }

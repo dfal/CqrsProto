@@ -22,6 +22,8 @@ namespace Infrastructure.EventSourcing
 		
 		public int Version { get; protected set; }
 
+		public Guid Head { get; private set; }
+
 		public IEvent[] Flush()
 		{
 			var events = pendingEvents.ToArray();
@@ -30,11 +32,18 @@ namespace Infrastructure.EventSourcing
 			return events;
 		}
 
-		public void Restore(IEnumerable<IEvent> history)
+		public void Restore(IEnumerable<Commit> history)
 		{
 			Debug.Assert(history != null);
 
-			foreach (var @event in history) Raise(@event);
+			foreach (var commit in history)
+			{
+				Debug.Assert(commit.SourceId == Id);
+				
+				foreach (var @event in commit.Changes) Raise(@event);
+
+				Head = commit.Id;
+			}
 		}
 
 		protected void Handles<T>(Action<T> handler) where T : IEvent
