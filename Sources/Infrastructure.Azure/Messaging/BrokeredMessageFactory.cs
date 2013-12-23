@@ -16,7 +16,7 @@ namespace Infrastructure.Azure.Messaging
 				.FillMetadata(metadata);
 		}
 
-		private static BrokeredMessage Create(ISerializer serializer, object payload)
+		static BrokeredMessage Create(ISerializer serializer, object payload)
 		{
 			BrokeredMessage message;
 			var stream = new MemoryStream();
@@ -36,7 +36,7 @@ namespace Infrastructure.Azure.Messaging
 			return message;
 		}
 
-		private static BrokeredMessage FillCorrelationId(this BrokeredMessage message, string correlationId)
+		static BrokeredMessage FillCorrelationId(this BrokeredMessage message, string correlationId)
 		{
 			if (!string.IsNullOrWhiteSpace(correlationId))
 			{
@@ -46,7 +46,7 @@ namespace Infrastructure.Azure.Messaging
 			return message;
 		}
 
-		private static BrokeredMessage FillMessageId(this BrokeredMessage message, string messageId)
+		static BrokeredMessage FillMessageId(this BrokeredMessage message, string messageId)
 		{
 			if (!string.IsNullOrWhiteSpace(messageId))
 			{
@@ -57,7 +57,7 @@ namespace Infrastructure.Azure.Messaging
 		}
 
 
-		private static BrokeredMessage FillMetadata(this BrokeredMessage message, IDictionary<string, string> metadata)
+		static BrokeredMessage FillMetadata(this BrokeredMessage message, IDictionary<string, string> metadata)
 		{
 			if (metadata != null)
 			{

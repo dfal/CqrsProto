@@ -30,10 +30,9 @@ namespace Infrastructure.Serialization
 
 		public void Serialize(Stream output, object graph)
 		{
-			using (JsonWriter jsonWriter = new JsonTextWriter(new StreamWriter(output, Encoding.UTF8)))
-			{
-				Serializer.Serialize(jsonWriter, graph);
-			}
+			JsonWriter jsonWriter = new JsonTextWriter(new StreamWriter(output, Encoding.UTF8));
+			Serializer.Serialize(jsonWriter, graph);
+			jsonWriter.Flush();
 		}
 
 		public object Deserialize(byte[] serilized, Type objectType)
