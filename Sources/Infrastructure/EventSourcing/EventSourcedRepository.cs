@@ -91,7 +91,7 @@ namespace Infrastructure.EventSourcing
 			eventStore.Save(new Commit
 			{
 				Id = Guid.NewGuid(),
-				ParentId = eventSourced.Head,
+				ParentId = eventSourced.Head != Guid.Empty ? new Guid?(eventSourced.Head) : null,
 				SourceId = eventSourced.Id,
 				SourceType = SourceType,
 				Changes = eventSourced.Flush(),

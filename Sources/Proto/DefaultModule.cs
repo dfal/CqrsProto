@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using Infrastructure.Azure.Messaging;
+using Infrastructure.Messaging;
 using Nancy;
-using Nancy.Responses;
 
 namespace Proto
 {

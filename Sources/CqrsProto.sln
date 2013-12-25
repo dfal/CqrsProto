@@ -17,6 +17,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Proto", "Proto\Proto.csproj
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommandHandler", "CommandHandler\CommandHandler.csproj", "{41CC71C4-444F-44A3-9FDF-9DFEB91673EE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QueryHandler", "QueryHandler\QueryHandler.csproj", "{8B448710-CD75-4ED2-B2B8-6EE26E111DE4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProjectionHandler", "ProjectionHandler\ProjectionHandler.csproj", "{DA75829F-02E7-4786-9524-1DE4756C3DA3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.Azure.IntegrationTests", "Infrastructure.Azure.IntegrationTests\Infrastructure.Azure.IntegrationTests.csproj", "{E7790966-76E9-43E8-8536-9A43B4D392DD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -43,6 +49,18 @@ Global
 		{41CC71C4-444F-44A3-9FDF-9DFEB91673EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{41CC71C4-444F-44A3-9FDF-9DFEB91673EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{41CC71C4-444F-44A3-9FDF-9DFEB91673EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8B448710-CD75-4ED2-B2B8-6EE26E111DE4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8B448710-CD75-4ED2-B2B8-6EE26E111DE4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8B448710-CD75-4ED2-B2B8-6EE26E111DE4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8B448710-CD75-4ED2-B2B8-6EE26E111DE4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DA75829F-02E7-4786-9524-1DE4756C3DA3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DA75829F-02E7-4786-9524-1DE4756C3DA3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DA75829F-02E7-4786-9524-1DE4756C3DA3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DA75829F-02E7-4786-9524-1DE4756C3DA3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E7790966-76E9-43E8-8536-9A43B4D392DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E7790966-76E9-43E8-8536-9A43B4D392DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E7790966-76E9-43E8-8536-9A43B4D392DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E7790966-76E9-43E8-8536-9A43B4D392DD}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -51,8 +69,11 @@ Global
 		{B771C779-2F6A-4EBC-BEB6-A0911F950592} = {07F854F9-9289-4EB0-9A32-1EE9E5D63E68}
 		{AAA3AC5D-65DA-4DE8-954F-9FAFD6BDE4D0} = {07F854F9-9289-4EB0-9A32-1EE9E5D63E68}
 		{4F1A81FB-913B-45BE-AB24-2681F899FA80} = {07F854F9-9289-4EB0-9A32-1EE9E5D63E68}
+		{E7790966-76E9-43E8-8536-9A43B4D392DD} = {07F854F9-9289-4EB0-9A32-1EE9E5D63E68}
 		{A449BA58-025A-4A0B-B482-C86DD8C61D1E} = {D6891D15-84F2-4495-B8D7-F8F228588109}
 		{41CC71C4-444F-44A3-9FDF-9DFEB91673EE} = {D6891D15-84F2-4495-B8D7-F8F228588109}
+		{8B448710-CD75-4ED2-B2B8-6EE26E111DE4} = {D6891D15-84F2-4495-B8D7-F8F228588109}
+		{DA75829F-02E7-4786-9524-1DE4756C3DA3} = {D6891D15-84F2-4495-B8D7-F8F228588109}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		EnterpriseLibraryConfigurationToolBinariesPath = packages\TransientFaultHandling.Core.5.1.1209.1\lib\NET4;packages\Unity.2.1.505.2\lib\NET35;packages\Unity.Interception.2.1.505.2\lib\NET35;packages\EnterpriseLibrary.Common.5.0.505.0\lib\NET35;packages\EnterpriseLibrary.WindowsAzure.TransientFaultHandling.5.1.1212.0\lib\NET4;packages\EnterpriseLibrary.WindowsAzure.TransientFaultHandling.5.1.1212.0\DesignTime

@@ -33,7 +33,8 @@ namespace Infrastructure.Azure.EventSourcing
 			this.serializer = serializer;
 			
 			var blobClient = account.CreateCloudBlobClient();
-			
+
+			tenant = tenant.ToLower();
 			this.commitsContainer = blobClient.GetContainerReference(tenant + CommitsContainerSuffix);
 			this.commitsContainer.CreateIfNotExists();
 			
@@ -123,6 +124,8 @@ namespace Infrastructure.Azure.EventSourcing
 				commitBlob.Metadata[pair.Key] = pair.Value;
 
 			commitBlob.Metadata["CommitId"] = commit.Id.ToString();
+			commitBlob.Metadata["SourceId"] = commit.SourceId.ToString();
+			commitBlob.Metadata["SourceType"] = commit.SourceType;
 
 			if (commit.ParentId.HasValue)
 				commitBlob.Metadata["ParentId"] = commit.ParentId.ToString();
