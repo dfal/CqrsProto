@@ -1,4 +1,6 @@
-﻿namespace Infrastructure.Messaging.Handling
+﻿using Infrastructure.Messaging;
+
+namespace CommandHandler.Handling
 {
 	public interface ICommandHandler { }
 

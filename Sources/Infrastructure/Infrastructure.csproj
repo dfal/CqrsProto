@@ -54,8 +54,6 @@
     <Compile Include="EventSourcing\IMementoOriginator.cs" />
     <Compile Include="EventSourcing\ISnapshotStore.cs" />
     <Compile Include="Messaging\Envelope.cs" />
-    <Compile Include="Messaging\Handling\ICommandHandler.cs" />
-    <Compile Include="Messaging\Handling\CommandProcessor.cs" />
     <Compile Include="Messaging\ICommand.cs" />
     <Compile Include="Messaging\ICommandBus.cs" />
     <Compile Include="Messaging\IEvent.cs" />

@@ -1,5 +1,6 @@
 ﻿using System;
-using System.IO;
+using CommandHandler.Handling;
+using Infrastructure.Azure.Messaging;
 using Infrastructure.Messaging;
 using Infrastructure.Serialization;
 using Microsoft.ServiceBus.Messaging;
@@ -9,15 +10,17 @@ namespace CommandHandler
 	class Service
 	{
 		static bool stopped;
-		private readonly JsonSerializer serializer;
-		private readonly SubscriptionClient client;
+		private readonly IMessageReceiver receiver;
+		private readonly CommandHandlerRegistry handlerRegistry;
 
 		public Service()
 		{
-			serializer = new JsonSerializer();
-
 			// TODO: Get settings from config file.
-			client = SubscriptionClient.Create("proto/commands", "AllCommands");
+			var serializer = new JsonSerializer();
+			var client = SubscriptionClient.Create("proto/commands", "AllCommands");
+
+			receiver = new TopicReceiver(client, serializer);
+			handlerRegistry = new CommandHandlerRegistry();
 		}
 
 		public void Start()
@@ -35,29 +38,10 @@ namespace CommandHandler
 		{
 			while (!stopped)
 			{
-				ConsumeMessage();
-			}
-		}
+				var message = receiver.Receive<ICommand>(TimeSpan.FromSeconds(5));
+				if (message == null) continue;
 
-		void ConsumeMessage()
-		{
-			// TODO: Add retry mechanism;
-			var message = client.Receive(TimeSpan.FromSeconds(5));
-			if (message == null) return;
-
-			try
-			{
-				using (var stream = message.GetBody<Stream>())
-				{
-					var payload = serializer.Deserialize(stream);
-					var command = payload as ICommand;
-				}
-
-				message.Complete();
-			}
-			catch
-			{
-				message.DeadLetter();
+				handlerRegistry.Handle(message);
 			}
 		}
 	}

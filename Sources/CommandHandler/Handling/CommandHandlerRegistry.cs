@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Infrastructure.Messaging;
 
-namespace Infrastructure.Messaging.Handling
+namespace CommandHandler.Handling
 {
-	class CommandProcessor
+	class CommandHandlerRegistry
 	{
 		private readonly Dictionary<Type, ICommandHandler> handlers = new Dictionary<Type, ICommandHandler>();
 		
@@ -26,7 +27,7 @@ namespace Infrastructure.Messaging.Handling
 			}
 		}
 
-		public void ProcessCommand(ICommand command)
+		public void Handle(ICommand command)
 		{
 			var commandType = command.GetType();
 			if (!handlers.ContainsKey(commandType))
