@@ -8,9 +8,9 @@ namespace CommandHandler
 		{
 			HostFactory.Run(x =>
 			{
-				x.Service<Service>(s =>
+				x.Service<CommandHandlerService>(s =>
 				{
-					s.ConstructUsing(name => new Service());
+					s.ConstructUsing(name => new CommandHandlerService());
 					s.WhenStarted(tc => tc.Start());
 					s.WhenStopped(tc => tc.Stop());
 				});

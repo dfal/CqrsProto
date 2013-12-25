@@ -17,7 +17,7 @@ namespace Infrastructure.Azure.Messaging
 			this.serializer = serializer;
 		}
 
-		public void Consume<T>(Action<T> action) where T: ICommand
+		public void Consume<T>(Action<T> action)
 		{
 			Consume(action, TimeSpan.FromSeconds(5));
 		}

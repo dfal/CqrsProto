@@ -6,13 +6,13 @@ using Microsoft.ServiceBus.Messaging;
 
 namespace CommandHandler
 {
-	class Service
+	class CommandHandlerService
 	{
 		static bool stopped;
 		private TopicConsumer consumer;
 		private CommandHandlerRegistry handlerRegistry;
 
-		public Service()
+		public CommandHandlerService()
 		{
 			InitializeConsumer();
 			InitializeCommandHandlers();
