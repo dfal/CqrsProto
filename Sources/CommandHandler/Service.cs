@@ -1,5 +1,4 @@
-﻿using System;
-using CommandHandler.Handling;
+﻿using CommandHandler.Handling;
 using Infrastructure.Azure.Messaging;
 using Infrastructure.Messaging;
 using Infrastructure.Serialization;
@@ -10,23 +9,22 @@ namespace CommandHandler
 	class Service
 	{
 		static bool stopped;
-		private readonly IMessageReceiver receiver;
-		private readonly CommandHandlerRegistry handlerRegistry;
+		private TopicConsumer consumer;
+		private CommandHandlerRegistry handlerRegistry;
 
 		public Service()
 		{
-			// TODO: Get settings from config file.
-			var serializer = new JsonSerializer();
-			var client = SubscriptionClient.Create("proto/commands", "AllCommands");
-
-			receiver = new TopicReceiver(client, serializer);
-			handlerRegistry = new CommandHandlerRegistry();
+			InitializeConsumer();
+			InitializeCommandHandlers();
 		}
 
 		public void Start()
 		{
 			stopped = false;
-			ReceiveMessages();
+			while (!stopped)
+			{
+				consumer.Consume<ICommand>(handlerRegistry.Handle);
+			}
 		}
 
 		public void Stop()
@@ -34,15 +32,18 @@ namespace CommandHandler
 			stopped = true;
 		}
 
-		void ReceiveMessages()
+		private void InitializeConsumer()
 		{
-			while (!stopped)
-			{
-				var message = receiver.Receive<ICommand>(TimeSpan.FromSeconds(5));
-				if (message == null) continue;
+			// TODO: Get settings from config file.
+			var serializer = new JsonSerializer();
+			var client = SubscriptionClient.Create("proto/commands", "AllCommands");
+			consumer = new TopicConsumer(client, serializer);
+		}
 
-				handlerRegistry.Handle(message);
-			}
+		private void InitializeCommandHandlers()
+		{
+			handlerRegistry = new CommandHandlerRegistry();
+			// Register command handlers here;
 		}
 	}
 }

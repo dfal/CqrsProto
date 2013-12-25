@@ -100,9 +100,9 @@
     <Compile Include="Messaging\BrokeredMessageFactory.cs" />
     <Compile Include="Messaging\CommandBus.cs" />
     <Compile Include="Messaging\EventBus.cs" />
-    <Compile Include="Messaging\IMessageReceiver.cs" />
+    <Compile Include="Messaging\IMessageConsumer.cs" />
     <Compile Include="Messaging\ServiceBusSettings.cs" />
-    <Compile Include="Messaging\TopicReceiver.cs" />
+    <Compile Include="Messaging\TopicConsumer.cs" />
     <Compile Include="Messaging\TopicSender.cs" />
     <Compile Include="Messaging\ServiceBusConfig.cs" />
     <Compile Include="EventSourcing\EventStore.cs" />
