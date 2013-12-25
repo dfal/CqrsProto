@@ -11,8 +11,14 @@ namespace Infrastructure.Azure.Messaging
 		{
 			new TopicSettings
 			{
-				Path = "Events",
+				Path = "proto/events",
 				Subscriptions = new List<SubscriptionSettings> { new SubscriptionSettings { Name = "AllEvents" }}
+			},
+
+			new TopicSettings
+			{
+				Path = "proto/commands",
+				Subscriptions = new List<SubscriptionSettings> { new SubscriptionSettings { Name = "AllCommands" }}
 			}
 		};
 	}

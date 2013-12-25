@@ -24,7 +24,7 @@ namespace Infrastructure.Azure.Messaging
 			});
 		}
 
-		private void CreateTopicIfNotExists(NamespaceManager namespaceManager, TopicSettings topicSettings)
+		private static void CreateTopicIfNotExists(NamespaceManager namespaceManager, TopicSettings topicSettings)
 		{
 			if(namespaceManager.TopicExists(topicSettings.Path)) return;
 
