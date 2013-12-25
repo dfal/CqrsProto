@@ -39,30 +39,7 @@ namespace Infrastructure.Tests.EventSourcing
 				new TestEventText { Text = "8", SourceVersion = 7 }
 			};
 
-			var commit1 = new Commit
-			{
-				Id = Guid.NewGuid(),
-				SourceId = entityId,
-				Changes = events.Take(2).ToArray()
-			};
-
-			var commit2 = new Commit
-			{
-				Id = Guid.NewGuid(),
-				ParentId = commit1.Id,
-				SourceId = entityId,
-				Changes = events.Skip(commit1.Changes.Length).Take(3).ToArray()
-			};
-
-			var commit3 = new Commit
-			{
-				Id = Guid.NewGuid(),
-				ParentId = commit2.Id,
-				SourceId = entityId,
-				Changes = events.Skip(commit1.Changes.Length + commit2.Changes.Length).ToArray()
-			};
-
-			test.Restore(new [] {commit1, commit2, commit3});
+			test.Restore(events);
 
 			test.Version.Should().Be(events.Length);
 			test.Number.Should().Be(events.OfType<TestEventNumber>().Last().Number);

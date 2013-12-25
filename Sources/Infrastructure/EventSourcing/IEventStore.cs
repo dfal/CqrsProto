@@ -17,6 +17,7 @@ namespace Infrastructure.EventSourcing
 
 		public Guid SourceId { get; set; }
 		public string SourceType { get; set; }
+		public string SourceETag { get; set; }
 
 		public IEvent[] Changes { get; set; }
 		public IDictionary<string, string> Metadata { get; set; }

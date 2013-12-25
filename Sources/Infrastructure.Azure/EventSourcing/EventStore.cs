@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Net;
 using Infrastructure.EventSourcing;
 using Infrastructure.Messaging;
@@ -53,6 +54,7 @@ namespace Infrastructure.Azure.EventSourcing
 			Debug.Assert(commit.Changes.Length > 0);
 
 			var commitBlob = SaveCommit(commit);
+			
 			try
 			{
 				UpsertHead(commit);
@@ -72,6 +74,8 @@ namespace Infrastructure.Azure.EventSourcing
 				throw;
 			}
 
+			UpdateCommitMetadata(commitBlob, commit);
+
 			foreach (var @event in commit.Changes)
 			{
 				eventBus.Publish(new Envelope<IEvent>(@event)
@@ -82,34 +86,35 @@ namespace Infrastructure.Azure.EventSourcing
 			}
 		}
 
+		/// <summary>
+		/// If there no events since minVersion it will return last Commit with correct SourceETag and commit ID but empty array of events.
+		/// </summary>
+		/// <param name="sourceId"></param>
+		/// <param name="minVersion"></param>
+		/// <returns></returns>
 		public IEnumerable<Commit> Load(Guid sourceId, int minVersion)
 		{
 			Debug.Assert(sourceId != Guid.Empty);
 
 			var commitId = GetHead(sourceId);
-
-			var commits = new List<Commit>();
+			var commits = new Stack<Commit>();
+			
 			while (commitId.HasValue)
 			{
 				var commit = GetCommit(commitId.Value);
-				commits.Add(commit);
+				
+				commits.Push(commit);
+
+				if (commit.Changes.First().SourceVersion <= minVersion)
+				{
+					commit.Changes = commit.Changes.Where(x => x.SourceVersion >= minVersion).ToArray();
+					break;
+				}
+
 				commitId = commit.ParentId;
 			}
 
-			return commits;
-		}
-
-		Guid? GetHead(Guid sourceId)
-		{
-			var headBlob = headsContainer.GetBlockBlobReference(sourceId.ToString());
-			
-			if (!headBlob.Exists()) return null;
-
-			using (var stream = new MemoryStream())
-			{
-				headBlob.DownloadToStream(stream);
-				return new Guid(stream.ToArray());
-			}
+			return commits.ToArray();
 		}
 
 		CloudBlockBlob SaveCommit(Commit commit)
@@ -120,19 +125,47 @@ namespace Infrastructure.Azure.EventSourcing
 
 			commitBlob.UploadFromByteArray(content, 0, content.Length);
 
+			return commitBlob;
+		}
+
+		void UpsertHead(Commit commit)
+		{
+			var headBlob = headsContainer.GetBlockBlobReference(commit.SourceId.ToString());
+
+			var headBytes = commit.Id.ToByteArray();
+
+			headBlob.UploadFromByteArray(headBytes, 0, headBytes.Length, commit.AccessCondition());
+
+			commit.SourceETag = headBlob.Properties.ETag;
+		}
+
+		static void UpdateCommitMetadata(ICloudBlob commitBlob, Commit commit)
+		{
 			if (commit.Metadata != null) foreach (var pair in commit.Metadata)
 				commitBlob.Metadata[pair.Key] = pair.Value;
-
-			commitBlob.Metadata["CommitId"] = commit.Id.ToString();
-			commitBlob.Metadata["SourceId"] = commit.SourceId.ToString();
-			commitBlob.Metadata["SourceType"] = commit.SourceType;
 
 			if (commit.ParentId.HasValue)
 				commitBlob.Metadata["ParentId"] = commit.ParentId.ToString();
 
-			commitBlob.SetMetadata();
+			commitBlob.Metadata["CommitId"] = commit.Id.ToString();
+			commitBlob.Metadata["SourceId"] = commit.SourceId.ToString();
+			commitBlob.Metadata["SourceType"] = commit.SourceType;
+			commitBlob.Metadata["SourceETag"] = commit.SourceETag;
 
-			return commitBlob;
+			commitBlob.SetMetadata();
+		}
+
+		Guid? GetHead(Guid sourceId)
+		{
+			var headBlob = headsContainer.GetBlockBlobReference(sourceId.ToString());
+
+			if (!headBlob.Exists()) return null;
+
+			using (var stream = new MemoryStream())
+			{
+				headBlob.DownloadToStream(stream);
+				return new Guid(stream.ToArray());
+			}
 		}
 
 		Commit GetCommit(Guid commitId)
@@ -152,17 +185,9 @@ namespace Infrastructure.Azure.EventSourcing
 				SourceId = new Guid(commitBlob.Metadata["SourceId"]),
 				ParentId = commitBlob.Metadata.ContainsKey("ParentId") ? new Guid?(new Guid(commitBlob.Metadata["ParentId"])) : null,
 				SourceType = commitBlob.Metadata["SourceType"],
+				SourceETag = commitBlob.Metadata["SourceETag"],
 				Changes = (IEvent[])serializer.Deserialize(content),
 			};
-		}
-
-		void UpsertHead(Commit commit)
-		{
-			var headBlob = headsContainer.GetBlockBlobReference(commit.SourceId.ToString());
-
-			var headBytes = commit.Id.ToByteArray();
-	
-			headBlob.UploadFromByteArray(headBytes, 0, headBytes.Length, commit.AccessCondition());
 		}
 	}
 }

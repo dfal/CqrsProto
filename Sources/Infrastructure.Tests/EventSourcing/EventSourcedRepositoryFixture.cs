@@ -304,14 +304,12 @@ namespace Infrastructure.Tests.EventSourcing
 				get { return 0; }
 			}
 
-			public Guid Head { get; [UsedImplicitly] set; }
-
 			public IEvent[] Flush()
 			{
 				return new IEvent[0];
 			}
 
-			public void Restore(IEnumerable<Commit> history)
+			public void Restore(IEnumerable<IEvent> history)
 			{ }
 		}
 	}

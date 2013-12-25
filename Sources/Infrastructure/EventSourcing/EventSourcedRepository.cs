@@ -16,6 +16,8 @@ namespace Infrastructure.EventSourcing
 		readonly IEventStore eventStore;
 		readonly ISnapshotStore snapshotStore;
 
+		readonly IDictionary<T, Head> loadedHeads;
+
 		static EventSourcedRepository()
 		{
 			var sourceType = typeof (T);
@@ -39,6 +41,7 @@ namespace Infrastructure.EventSourcing
 			Debug.Assert(eventStore != null);
 			
 			this.eventStore = eventStore;
+			this.loadedHeads = new Dictionary<T, Head>();
 		}
 
 		public EventSourcedRepository(IEventStore eventStore, ISnapshotStore snapshotStore)
@@ -58,17 +61,16 @@ namespace Infrastructure.EventSourcing
 			if (snapshot != null)
 				minVersion = snapshot.Version + 1;
 
-			var events = eventStore.Load(id, minVersion).AsCachedAnyEnumerable();
+			var commits = eventStore.Load(id, minVersion).AsCachedAnyEnumerable();
 
-			if (snapshot == null && !events.Any()) return null;
+			if (snapshot == null && !commits.Any()) return null;
 
 			var entity = EntityFactory(id);
 			
 			if (snapshot != null) 
 				((IMementoOriginator)entity).RestoreSnapshot(snapshot);
-			
-			if (events.Any())
-				entity.Restore(events);
+
+			RestoreCommits(entity, commits);
 			
 			return entity;
 		}
@@ -88,18 +90,48 @@ namespace Infrastructure.EventSourcing
 			Debug.Assert(eventSourced != null);
 			Debug.Assert(!string.IsNullOrEmpty(correlationId));
 
-			eventStore.Save(new Commit
+			var changes = eventSourced.Flush();
+			if (changes.Length == 0) return;
+
+			var isNew = eventSourced.Version == changes.Length;
+
+			if (!isNew && !loadedHeads.ContainsKey(eventSourced))
+				throw new InvalidOperationException("Entity wasn't loaded by this instance of repository.");
+
+			var commit = new Commit
 			{
 				Id = Guid.NewGuid(),
-				ParentId = eventSourced.Head != Guid.Empty ? new Guid?(eventSourced.Head) : null,
+				ParentId = isNew ? null : new Guid?(loadedHeads[eventSourced].CommitId),
 				SourceId = eventSourced.Id,
 				SourceType = SourceType,
-				Changes = eventSourced.Flush(),
+				SourceETag = isNew ? null : loadedHeads[eventSourced].ETag,
+				Changes = changes,
 				Metadata = new Dictionary<string, string>
 				{
 					{"CorrelationId", correlationId}
 				}
-			});
+			};
+			
+			eventStore.Save(commit);
+
+			loadedHeads[eventSourced] = new Head
+			{
+				CommitId = commit.Id,
+				ETag = commit.SourceETag
+			};
+		}
+
+		void RestoreCommits(T entity, IEnumerable<Commit> commits)
+		{
+			foreach (var commit in commits)
+			{
+				entity.Restore(commit.Changes);
+				loadedHeads[entity] = new Head
+				{
+					CommitId = commit.Id,
+					ETag = commit.SourceETag
+				};
+			}
 		}
 
 		static Func<Guid, T> GetEntityFactory()
@@ -110,6 +142,12 @@ namespace Infrastructure.EventSourcing
 				throw new InvalidCastException("Type T must have a constructor with the following signature: .ctor(Guid)");
 
 			return id => (T)ctor.Invoke(new object[] { id });
+		}
+
+		struct Head
+		{
+			public Guid CommitId;
+			public string ETag;
 		}
 	}
 }

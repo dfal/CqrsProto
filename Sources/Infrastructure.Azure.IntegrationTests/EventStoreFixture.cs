@@ -6,6 +6,7 @@ using Infrastructure.EventSourcing;
 using Infrastructure.Messaging;
 using Infrastructure.Serialization;
 using Microsoft.WindowsAzure.Storage;
+using Microsoft.WindowsAzure.Storage.Blob;
 using Moq;
 using NUnit.Framework;
 
@@ -14,27 +15,47 @@ namespace Infrastructure.Azure.IntegrationTests
 	[TestFixture]
 	public class EventStoreFixture
 	{
+		const string Tenant = "testTenant";
+
+		CloudBlobContainer headsContainer;
+		CloudBlobContainer commitsContainer;
+		
+		EventSourcedRepository<TestEventSourced> repository;
+		ISerializer serializer;
+
+		[SetUp]
+		public void SetUp()
+		{
+			serializer = new JsonSerializer();
+
+			var cloudStorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
+			
+			var eventStore = new EventStore(Tenant, cloudStorageAccount, serializer, new Mock<IEventBus>().Object);
+
+			repository = new EventSourcedRepository<TestEventSourced>(eventStore);
+
+			var blobClient = cloudStorageAccount.CreateCloudBlobClient();
+			this.headsContainer = blobClient.GetContainerReference(Tenant.ToLower() + "-heads");
+			this.commitsContainer = blobClient.GetContainerReference(Tenant.ToLower() + "-commits");
+		}
+
+		[TestFixtureTearDown]
+		public void TearDown()
+		{
+			headsContainer.DeleteIfExists();
+			commitsContainer.DeleteIfExists();
+		}
+
 		[Test]
 		public void Should_store_first_commit_with_events()
 		{
-			const string tenant = "testTenant";
 			const string correlationId = "testcorrelation";
 			
-			var cloudStorageAccount = CloudStorageAccount.DevelopmentStorageAccount;
-			var serializer = new JsonSerializer();
-			
-			var eventStore = new EventStore(tenant, cloudStorageAccount, serializer, new Mock<IEventBus>().Object);
-
-			var repository = new EventSourcedRepository<TestEventSourced>(eventStore);
-
 			var source = new TestEventSourced(42, "forty-two");
 			source.UpdateNumber(43);
 			source.UpdateText("forty-three");
 			repository.Save(source, correlationId);
 
-			var blobClient = cloudStorageAccount.CreateCloudBlobClient();
-			var headsContainer = blobClient.GetContainerReference(tenant.ToLower() + "-heads");
-			
 			var head = headsContainer.GetBlockBlobReference(source.Id.ToString());
 			head.Exists().Should().BeTrue();
 
@@ -45,7 +66,6 @@ namespace Infrastructure.Azure.IntegrationTests
 				commitId = new Guid(stream.ToArray());
 			}
 
-			var commitsContainer = blobClient.GetContainerReference(tenant.ToLower() + "-commits");
 			var commit = commitsContainer.GetBlockBlobReference(commitId.ToString());
 			commit.Exists().Should().BeTrue();
 
@@ -85,9 +105,36 @@ namespace Infrastructure.Azure.IntegrationTests
 			commit.Metadata["CommitId"].Should().NotBeEmpty();
 			commit.Metadata.ContainsKey("ParentId").Should().BeFalse();
 		}
+
+		[Test]
+		public void Shoud_throw_concurrency_exception_when_there_was_an_attempt_to_save_changes_of_outdated_entity()
+		{
+			var source = new TestEventSourced(42, "forty-two");
+			repository.Save(source, Guid.NewGuid().ToString());
+
+			var source1 = repository.Get(source.Id);
+			source1.UpdateNumber(43);
+
+			repository.Save(source1, Guid.NewGuid().ToString());
+
+			source.UpdateNumber(44);
+
+			Action action = () => repository.Save(source, Guid.NewGuid().ToString());
+			action.ShouldThrow<ConcurrencyException>()
+				.Where(ex => ex.EntityId == source.Id && ex.EntityType == source.GetType().Name);
+		}
+
+		[Test]
+		public void Shoud_be_able_to_save_the_same_instance_multiple_times()
+		{
+			var source = new TestEventSourced(42, "forty-two");
+			repository.Save(source, Guid.NewGuid().ToString());
+
+			source.UpdateNumber(44);
+
+			repository.Save(source, Guid.NewGuid().ToString());
+		}
 	}
-
-
 
 	class TestEventSourced : EventSourced
 	{
@@ -123,7 +170,7 @@ namespace Infrastructure.Azure.IntegrationTests
 		}
 	}
 
-	class TestEventCreated : IEvent
+	public class TestEventCreated : IEvent
 	{
 		public Guid SourceId { get; set; }
 		public int SourceVersion { get; set; }
@@ -132,7 +179,7 @@ namespace Infrastructure.Azure.IntegrationTests
 		public string Text { get; set; }
 	}
 
-	class TestEventNumber : IEvent
+	public class TestEventNumber : IEvent
 	{
 		public Guid SourceId { get; set; }
 		public int SourceVersion { get; set; }
@@ -140,7 +187,7 @@ namespace Infrastructure.Azure.IntegrationTests
 		public int Number { get; set; }
 	}
 
-	class TestEventText : IEvent
+	public class TestEventText : IEvent
 	{
 		public Guid SourceId { get; set; }
 		public int SourceVersion { get; set; }
