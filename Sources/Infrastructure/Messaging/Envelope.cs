@@ -2,14 +2,6 @@
 
 namespace Infrastructure.Messaging
 {
-	public abstract class Envelope
-	{
-		public static Envelope<T> Create<T>(T message)
-		{
-			return new Envelope<T>(message);
-		}
-	}
-
 	public class Envelope<T>
 	{
 		public Envelope(T message)
@@ -27,7 +19,18 @@ namespace Infrastructure.Messaging
 
 		public static implicit operator Envelope<T>(T message)
 		{
-			return Envelope.Create(message);
+			return message.ToEnvelope();
+		}
+	}
+
+	public static class EnvelopeExtensions
+	{
+		public static Envelope<T> ToEnvelope<T>(this T message)
+		{
+			return new Envelope<T>(message)
+			{
+				MessageId = Guid.NewGuid().ToString()
+			};
 		}
 	}
 }

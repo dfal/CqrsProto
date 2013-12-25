@@ -21,12 +21,14 @@ namespace Infrastructure.Azure.EventSourcing
 		readonly CloudBlobContainer commitsContainer;
 		readonly CloudBlobContainer headsContainer;
 
-		public EventStore(string tenant, string connectionString, ISerializer serializer)
-			: this(tenant, CloudStorageAccount.Parse(connectionString), serializer)
+		readonly IEventBus eventBus;
+
+		public EventStore(string tenant, string connectionString, ISerializer serializer, IEventBus eventBus)
+			: this(tenant, CloudStorageAccount.Parse(connectionString), serializer, eventBus)
 		{
 		}
 
-		public EventStore(string tenant, CloudStorageAccount account, ISerializer serializer)
+		public EventStore(string tenant, CloudStorageAccount account, ISerializer serializer, IEventBus eventBus)
 		{
 			this.serializer = serializer;
 			
@@ -37,8 +39,48 @@ namespace Infrastructure.Azure.EventSourcing
 			
 			this.headsContainer = blobClient.GetContainerReference(tenant + HeadsContainerSuffix);
 			this.headsContainer.CreateIfNotExists();
+
+			this.eventBus = eventBus;
 		}
-		
+
+		public void Save(Commit commit)
+		{
+			Debug.Assert(commit != null);
+			Debug.Assert(commit.SourceId != Guid.Empty);
+			Debug.Assert(commit.Id != Guid.Empty);
+			Debug.Assert(commit.Changes != null);
+			Debug.Assert(commit.Changes.Length > 0);
+
+			var commitBlob = SaveCommit(commit);
+			try
+			{
+				UpsertHead(commit);
+			}
+			catch (StorageException ex)
+			{
+				commitBlob.DeleteIfExists();
+				
+				if (ex.RequestInformation.HttpStatusCode == (int)HttpStatusCode.PreconditionFailed)
+					throw new ConcurrencyException(commit.SourceId, commit.SourceType);
+
+				throw;
+			}
+			catch
+			{
+				commitBlob.DeleteIfExists();
+				throw;
+			}
+
+			foreach (var @event in commit.Changes)
+			{
+				eventBus.Publish(new Envelope<IEvent>(@event)
+				{
+					MessageId = Guid.NewGuid().ToString(),
+					CorrelationId = commit.Metadata.ContainsKey("CorrelationId") ? commit.Metadata["CorrelationId"] : string.Empty
+				});
+			}
+		}
+
 		public IEnumerable<Commit> Load(Guid sourceId, int minVersion)
 		{
 			Debug.Assert(sourceId != Guid.Empty);
@@ -69,6 +111,27 @@ namespace Infrastructure.Azure.EventSourcing
 			}
 		}
 
+		CloudBlockBlob SaveCommit(Commit commit)
+		{
+			var commitBlob = commitsContainer.GetBlockBlobReference(commit.Id.ToString());
+
+			var content = serializer.Serialize(commit.Changes);
+
+			commitBlob.UploadFromByteArray(content, 0, content.Length);
+
+			if (commit.Metadata != null) foreach (var pair in commit.Metadata)
+				commitBlob.Metadata[pair.Key] = pair.Value;
+
+			commitBlob.Metadata["CommitId"] = commit.Id.ToString();
+
+			if (commit.ParentId.HasValue)
+				commitBlob.Metadata["ParentId"] = commit.ParentId.ToString();
+
+			commitBlob.SetMetadata();
+
+			return commitBlob;
+		}
+
 		Commit GetCommit(Guid commitId)
 		{
 			var commitBlob = commitsContainer.GetBlockBlobReference(commitId.ToString());
@@ -88,56 +151,6 @@ namespace Infrastructure.Azure.EventSourcing
 				SourceType = commitBlob.Metadata["SourceType"],
 				Changes = (IEvent[])serializer.Deserialize(content),
 			};
-		}
-
-		public void Save(Commit commit)
-		{
-			Debug.Assert(commit != null);
-			Debug.Assert(commit.SourceId != Guid.Empty);
-			Debug.Assert(commit.Id != Guid.Empty);
-			Debug.Assert(commit.Changes != null);
-			Debug.Assert(commit.Changes.Length > 0);
-
-			var commitBlob = SaveCommit(commit);
-			try
-			{
-				UpsertHead(commit);
-			}
-			catch (StorageException ex)
-			{
-				commitBlob.DeleteIfExists();
-				
-				if (ex.RequestInformation.HttpStatusCode == (int)HttpStatusCode.PreconditionFailed)
-					throw new ConcurrencyException(commit.SourceId, commit.SourceType);
-
-				throw;
-			}
-			catch
-			{
-				commitBlob.DeleteIfExists();
-				throw;
-			}
-		}
-
-		CloudBlockBlob SaveCommit(Commit commit)
-		{
-			var commitBlob = commitsContainer.GetBlockBlobReference(commit.Id.ToString());
-
-			var content = serializer.Serialize(commit.Changes);
-
-			commitBlob.UploadFromByteArray(content, 0, content.Length);
-
-			if (commit.Metadata != null) foreach (var pair in commit.Metadata)
-					commitBlob.Metadata[pair.Key] = pair.Value;
-
-			commitBlob.Metadata["CommitId"] = commit.Id.ToString();
-
-			if (commit.ParentId.HasValue)
-				commitBlob.Metadata["ParentId"] = commit.ParentId.ToString();
-
-			commitBlob.SetMetadata();
-
-			return commitBlob;
 		}
 
 		void UpsertHead(Commit commit)
