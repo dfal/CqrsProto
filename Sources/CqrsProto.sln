@@ -11,9 +11,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.Tests", "Inf
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Infrastructure.Azure", "Infrastructure.Azure\Infrastructure.Azure.csproj", "{4F1A81FB-913B-45BE-AB24-2681F899FA80}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Proto", "Proto", "{248BCD90-5574-49DD-91CA-A9EFA82B6C66}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Proto", "Proto", "{D6891D15-84F2-4495-B8D7-F8F228588109}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Proto", "Proto\Proto.csproj", "{208BC862-3896-415D-9647-F566C428EF2B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Proto", "Proto\Proto.csproj", "{A449BA58-025A-4A0B-B482-C86DD8C61D1E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommandHandler", "CommandHandler\CommandHandler.csproj", "{41CC71C4-444F-44A3-9FDF-9DFEB91673EE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,10 +35,14 @@ Global
 		{4F1A81FB-913B-45BE-AB24-2681F899FA80}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4F1A81FB-913B-45BE-AB24-2681F899FA80}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4F1A81FB-913B-45BE-AB24-2681F899FA80}.Release|Any CPU.Build.0 = Release|Any CPU
-		{208BC862-3896-415D-9647-F566C428EF2B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{208BC862-3896-415D-9647-F566C428EF2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{208BC862-3896-415D-9647-F566C428EF2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{208BC862-3896-415D-9647-F566C428EF2B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A449BA58-025A-4A0B-B482-C86DD8C61D1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A449BA58-025A-4A0B-B482-C86DD8C61D1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A449BA58-025A-4A0B-B482-C86DD8C61D1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A449BA58-025A-4A0B-B482-C86DD8C61D1E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{41CC71C4-444F-44A3-9FDF-9DFEB91673EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{41CC71C4-444F-44A3-9FDF-9DFEB91673EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{41CC71C4-444F-44A3-9FDF-9DFEB91673EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{41CC71C4-444F-44A3-9FDF-9DFEB91673EE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -45,7 +51,8 @@ Global
 		{B771C779-2F6A-4EBC-BEB6-A0911F950592} = {07F854F9-9289-4EB0-9A32-1EE9E5D63E68}
 		{AAA3AC5D-65DA-4DE8-954F-9FAFD6BDE4D0} = {07F854F9-9289-4EB0-9A32-1EE9E5D63E68}
 		{4F1A81FB-913B-45BE-AB24-2681F899FA80} = {07F854F9-9289-4EB0-9A32-1EE9E5D63E68}
-		{208BC862-3896-415D-9647-F566C428EF2B} = {248BCD90-5574-49DD-91CA-A9EFA82B6C66}
+		{A449BA58-025A-4A0B-B482-C86DD8C61D1E} = {D6891D15-84F2-4495-B8D7-F8F228588109}
+		{41CC71C4-444F-44A3-9FDF-9DFEB91673EE} = {D6891D15-84F2-4495-B8D7-F8F228588109}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		EnterpriseLibraryConfigurationToolBinariesPath = packages\TransientFaultHandling.Core.5.1.1209.1\lib\NET4;packages\Unity.2.1.505.2\lib\NET35;packages\Unity.Interception.2.1.505.2\lib\NET35;packages\EnterpriseLibrary.Common.5.0.505.0\lib\NET35;packages\EnterpriseLibrary.WindowsAzure.TransientFaultHandling.5.1.1212.0\lib\NET4;packages\EnterpriseLibrary.WindowsAzure.TransientFaultHandling.5.1.1212.0\DesignTime
