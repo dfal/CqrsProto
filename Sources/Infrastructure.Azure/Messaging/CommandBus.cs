@@ -3,7 +3,7 @@ using Infrastructure.Serialization;
 
 namespace Infrastructure.Azure.Messaging
 {
-	class CommandBus : ICommandBus
+	public class CommandBus : ICommandBus
 	{
 		private readonly IMessageSender sender;
 		private readonly IMetadataProvider metadataProvider;

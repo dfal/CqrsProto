@@ -1,8 +1,12 @@
-﻿using CommandHandler.Handling;
+﻿using System.Collections.Generic;
+using CommandHandler.Handling;
+using Infrastructure.Azure.EventSourcing;
 using Infrastructure.Azure.Messaging;
+using Infrastructure.EventSourcing;
 using Infrastructure.Messaging;
 using Infrastructure.Serialization;
 using Microsoft.ServiceBus.Messaging;
+using Proto.Domain;
 
 namespace CommandHandler
 {
@@ -12,8 +16,21 @@ namespace CommandHandler
 		private TopicConsumer consumer;
 		private CommandHandlerRegistry handlerRegistry;
 
+		readonly ISerializer serializer;
+
+		const string EventStoreConnectionString = "[ConnectionString from Azure]";
+		readonly IEventStore eventStore;
+		readonly ServiceBusSettings settings = new ServiceBusSettings();
+
+
 		public CommandHandlerService()
 		{
+			serializer = new JsonSerializer();
+
+			var eventSender = new TopicSender(settings, "proto/events");
+			var eventBus = new EventBus(eventSender, new DummyMetadataProvider(), serializer);
+			eventStore = new EventStore("tenant", EventStoreConnectionString, serializer, eventBus);
+
 			InitializeConsumer();
 			InitializeCommandHandlers();
 		}
@@ -35,15 +52,21 @@ namespace CommandHandler
 		private void InitializeConsumer()
 		{
 			// TODO: Get settings from config file.
-			var serializer = new JsonSerializer();
-			var client = SubscriptionClient.Create("proto/commands", "AllCommands");
+			
+			var client = SubscriptionClient.CreateFromConnectionString(settings.ConnectionString, "proto/commands", "AllCommands");
 			consumer = new TopicConsumer(client, serializer);
 		}
 
 		private void InitializeCommandHandlers()
 		{
 			handlerRegistry = new CommandHandlerRegistry();
-			// Register command handlers here;
+			
+			handlerRegistry.RegisterHandler(new CustomerCommandHandler(GetCustomerRepository));
+		}
+
+		IEventSourcedRepository<Customer> GetCustomerRepository()
+		{
+			return new EventSourcedRepository<Customer>(eventStore);
 		}
 	}
 }

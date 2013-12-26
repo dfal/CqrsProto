@@ -10,6 +10,7 @@ namespace ProjectionHandler
 		static bool stopped;
 		private TopicConsumer consumer;
 		private EventHandlerRegistry handlerRegistry;
+		readonly ServiceBusSettings settings = new ServiceBusSettings();
 
 		public ProjectionHandlerService()
 		{
@@ -35,14 +36,14 @@ namespace ProjectionHandler
 		{
 			// TODO: Get settings from config file.
 			var serializer = new JsonSerializer();
-			var client = SubscriptionClient.Create("proto/events", "AllEvents");
+			var client = SubscriptionClient.CreateFromConnectionString(settings.ConnectionString, "proto/events", "AllEvents");
 			consumer = new TopicConsumer(client, serializer);
 		}
 
 		private void InitializeEventHandlers()
 		{
 			handlerRegistry = new EventHandlerRegistry();
-			// Register event handlers here;
+			handlerRegistry.RegisterHandler(new CustomerEventHandler());
 		}
 	}
 }

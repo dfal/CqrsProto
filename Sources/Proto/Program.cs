@@ -1,6 +1,7 @@
 ﻿using System;
-using System.Threading;
-using Microsoft.Owin.Hosting;
+using Infrastructure.Azure.Messaging;
+using Infrastructure.Serialization;
+using Proto.Domain;
 
 namespace Proto
 {
@@ -8,6 +9,26 @@ namespace Proto
 	{
 		static void Main(string[] args)
 		{
+			var settings = new ServiceBusSettings();
+			new ServiceBusConfig(settings).Initialize();
+
+			var sender = new TopicSender(settings, "proto/commands");
+			var bus = new CommandBus(sender, new DummyMetadataProvider(), new JsonSerializer());
+			Console.WriteLine("Press key to send command");
+
+			var name = Console.ReadLine();
+			while (!string.IsNullOrEmpty(name))
+			{
+				bus.Send(new CreateCustomer
+				{
+					CustomerName = name,
+					CustomerEmail = name + "@gmail.com",
+					CustomerVatNumber = "123456"
+				});
+
+				name = Console.ReadLine();
+			}
+			/*
 			var stop = new ManualResetEvent(false);
 
 			Console.CancelKeyPress += (sender, e) =>
@@ -25,6 +46,7 @@ namespace Proto
 				Console.WriteLine("Listening on {0}; press Ctrl+C to quit.", url);
 				stop.WaitOne();
 			}
+			 */
 		}
 	}
 }

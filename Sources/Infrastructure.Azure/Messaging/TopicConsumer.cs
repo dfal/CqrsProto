@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using Infrastructure.Messaging;
 using Infrastructure.Serialization;
 using Microsoft.ServiceBus.Messaging;
 
@@ -9,9 +8,9 @@ namespace Infrastructure.Azure.Messaging
 	public class TopicConsumer : IMessageConsumer
 	{
 		private readonly SubscriptionClient client;
-		private readonly JsonSerializer serializer;
+		private readonly ISerializer serializer;
 
-		public TopicConsumer(SubscriptionClient client, JsonSerializer serializer)
+		public TopicConsumer(SubscriptionClient client, ISerializer serializer)
 		{
 			this.client = client;
 			this.serializer = serializer;
