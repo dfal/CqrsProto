@@ -1,0 +1,20 @@
+[
+    {
+        "id":"1",
+        "name":"Volvo",
+        "vatNumber":"123456",
+        "email":"volvo@gmail.com"
+    },
+    {
+        "id":"2",
+        "name":"BMW",
+        "vatNumber":"3456",
+        "email":"bmw@gmail.com"
+    },
+    {
+        "id":"3",
+        "name":"Toyota",
+        "vatNumber":"88899988",
+        "email":"toyota@gmail.com"
+    }
+]

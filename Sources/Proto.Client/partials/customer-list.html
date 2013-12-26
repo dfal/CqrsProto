@@ -1,0 +1,22 @@
+<div class="container">
+    <div class="row">
+        <div class="col-md-2">
+            Search: <input type="text" ng-model="query">
+            Sort by: 
+            <select ng-model="orderProp">
+                <option value="name">Name</option>
+                <option value="vatNumber">VAT Number</option>
+            </select>
+        </div>
+        <div class="col-md-10">
+            <ul class="list-unstyled">
+                <li ng-repeat="customer in customers | filter:query | orderBy:orderProp">
+                    <a href="#/customer/{{customer.id}}">
+                        <i class="fa fa-user"></i> {{customer.name}}
+                        <p>{{customer.email}}</p>
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
