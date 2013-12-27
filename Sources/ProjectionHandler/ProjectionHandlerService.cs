@@ -1,8 +1,10 @@
-﻿using Infrastructure.Azure.Messaging;
+﻿using Infrastructure.Azure.Documents;
+using Infrastructure.Azure.Messaging;
 using Infrastructure.Messaging;
 using Infrastructure.Serialization;
 using Microsoft.ServiceBus.Messaging;
-using ProjectionHandler.Handling;
+using Microsoft.WindowsAzure.Storage;
+using ProjectionHandler.EventHandling;
 
 namespace ProjectionHandler
 {
@@ -43,7 +45,13 @@ namespace ProjectionHandler
 		private void InitializeEventHandlers()
 		{
 			handlerRegistry = new EventHandlerRegistry();
-			handlerRegistry.RegisterHandler(new CustomerEventHandler());
+			handlerRegistry.RegisterHandler(new CustomerEventHandler(GetDocumentStore));
+		}
+
+		const string storageConnectionString = "[YOUR_CONNECTION_STRING]";
+		DocumentStore GetDocumentStore()
+		{
+			return new DocumentStore("tenant", CloudStorageAccount.Parse(storageConnectionString));
 		}
 	}
 }

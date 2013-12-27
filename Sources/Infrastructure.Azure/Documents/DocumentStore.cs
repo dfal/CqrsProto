@@ -32,6 +32,16 @@ namespace Infrastructure.Azure.Documents
 			return table.Execute(retrieveOperation).Result as T;
 		}
 
+		public T Get<T>(string key) where T : class, ITableEntity, new()
+		{
+			var entity = Find<T>(key);
+
+			if (entity == null)
+				throw new EntityNotFoundException(key, typeof (T).Name);
+
+			return entity;
+		}
+
 		public IEnumerable<T> GetAll<T>() where T : class, ITableEntity, new()
 		{
 			var table = tableClient.GetTableReference(TableName<T>());
@@ -47,6 +57,8 @@ namespace Infrastructure.Azure.Documents
 			Debug.Assert(document != null);
 
 			var table = tableClient.GetTableReference(TableName<T>());
+
+			table.CreateIfNotExists();
 
 			document.PartitionKey = tenant;
 

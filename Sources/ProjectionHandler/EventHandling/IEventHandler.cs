@@ -1,6 +1,6 @@
 ﻿using Infrastructure.Messaging;
 
-namespace ProjectionHandler.Handling
+namespace ProjectionHandler.EventHandling
 {
 	public interface IEventHandler { }
 

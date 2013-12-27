@@ -134,7 +134,7 @@ namespace Infrastructure.Tests.EventSourcing
 			Action action = () => repository.Get(id);
 
 			action.ShouldThrow<EntityNotFoundException>()
-				.Where(ex => ex.EntityId == id && ex.EntityType == typeof(CorrectEventSourced).Name);
+				.Where(ex => ex.EntityId == id.ToString() && ex.EntityType == typeof(CorrectEventSourced).Name);
 		}
 
 		[Test]
@@ -165,7 +165,7 @@ namespace Infrastructure.Tests.EventSourcing
 					SourceId = entity.Id,
 					SourceVersion = 3,
 					Value = 44
-				},
+				}
 			};
 
 			var expectedMetadata = new Dictionary<string, string>

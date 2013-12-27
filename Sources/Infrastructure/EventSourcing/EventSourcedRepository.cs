@@ -80,7 +80,7 @@ namespace Infrastructure.EventSourcing
 			var entity = Find(id);
 			
 			if (entity == null)
-				throw new EntityNotFoundException(id, SourceType);
+				throw new EntityNotFoundException(id.ToString(), SourceType);
 
 			return entity;
 		}
