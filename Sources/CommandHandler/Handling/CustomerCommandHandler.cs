@@ -18,7 +18,7 @@ namespace CommandHandler.Handling
 
 		public void Handle(CreateCustomer command)
 		{
-			var customer = new Customer(command.CustomerName, command.CustomerVatNumber, command.CustomerEmail);
+			var customer = new Customer(command.Name, command.VatNumber, command.Email);
 
 			repositoryFactory().Save(customer, command.Id.ToString());
 		}

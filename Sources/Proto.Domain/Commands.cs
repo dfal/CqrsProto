@@ -7,9 +7,9 @@ namespace Proto.Domain
 	{
 		public Guid Id { get; set; }
 		
-		public string CustomerName { get; set; }
-		public string CustomerVatNumber { get; set; }
-		public string CustomerEmail { get; set; }
+		public string Name { get; set; }
+		public string VatNumber { get; set; }
+		public string Email { get; set; }
 	}
 
 	public class RenameCustomer : ICommand

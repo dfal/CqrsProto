@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Threading;
 using Infrastructure.Azure.Messaging;
 using Infrastructure.Serialization;
+using Microsoft.Owin.Hosting;
 using Proto.Domain;
 
 namespace Proto
@@ -9,6 +11,7 @@ namespace Proto
 	{
 		static void Main(string[] args)
 		{
+/*
 			var settings = new ServiceBusSettings();
 			new ServiceBusConfig(settings).Initialize();
 
@@ -28,7 +31,8 @@ namespace Proto
 
 				name = Console.ReadLine();
 			}
-			/*
+ */
+
 			var stop = new ManualResetEvent(false);
 
 			Console.CancelKeyPress += (sender, e) =>
@@ -39,14 +43,13 @@ namespace Proto
 				e.Cancel = true;
 			};
 
-			const string url = "http://localhost:8888";
+			const string url = "http://localhost:8880";
 			
 			using (WebApp.Start<Startup>(url))
 			{
 				Console.WriteLine("Listening on {0}; press Ctrl+C to quit.", url);
 				stop.WaitOne();
 			}
-			 */
 		}
 	}
 }
