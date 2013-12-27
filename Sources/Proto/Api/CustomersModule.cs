@@ -1,24 +1,29 @@
 ﻿using System;
+using Infrastructure.Azure.Documents;
 using Infrastructure.Messaging;
 using Nancy;
 using Nancy.ModelBinding;
+using ProjectionHandler.Documents;
 using Proto.Domain;
 
 namespace Proto.Api
 {
 	public class CustomersModule : NancyModule
 	{
-		public CustomersModule(ICommandBus commandBus)
+		public CustomersModule(ICommandBus commandBus, DocumentStore documentStore)
 			: base("/api/customers")
 		{
 			Get["/"] = _ =>
 			{
-				return "Customer list from projection store";
+				return documentStore.GetAll<CustomerDocument>();
 			};
 
-			Get["/customer/{id:guid}"] = _ =>
+			Get["/customer/{id:guid}"] = parameters =>
 			{
-				return string.Format("Customer '{0}' from projection store", _.id);
+				var customer = documentStore.Find<CustomerDocument>(parameters.id);
+
+				return customer;
+				//return string.Format("Customer '{0}' from projection store", parameters.id);
 			};
 
 			Post["/new"] = _ =>
