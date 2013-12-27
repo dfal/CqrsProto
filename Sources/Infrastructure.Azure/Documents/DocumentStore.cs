@@ -24,7 +24,7 @@ namespace Infrastructure.Azure.Documents
 
 		public T Find<T>(string key) where T : class, ITableEntity, new()
 		{
-			var table = tableClient.GetTableReference(typeof (T).Name);
+			var table = tableClient.GetTableReference(TableName<T>());
 			if (!table.Exists()) return null;
 
 			var retrieveOperation = TableOperation.Retrieve<T>(tenant, key);
@@ -34,7 +34,7 @@ namespace Infrastructure.Azure.Documents
 
 		public IEnumerable<T> GetAll<T>() where T : class, ITableEntity, new()
 		{
-			var table = tableClient.GetTableReference(typeof(T).Name);
+			var table = tableClient.GetTableReference(TableName<T>());
 			if (!table.Exists()) return Enumerable.Empty<T>();
 
 			var query = new TableQuery<T>().Where(TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, tenant));
@@ -46,13 +46,39 @@ namespace Infrastructure.Azure.Documents
 		{
 			Debug.Assert(document != null);
 
-			var table = tableClient.GetTableReference(typeof (T).Name);
+			var table = tableClient.GetTableReference(TableName<T>());
 
 			document.PartitionKey = tenant;
 
 			var insertOrReplace = TableOperation.InsertOrReplace(document);
 
 			table.Execute(insertOrReplace);
+		}
+
+		public void Delete<T>(string key) where T : class, ITableEntity, new()
+		{
+			Debug.Assert(!string.IsNullOrEmpty(key));
+
+			var table = tableClient.GetTableReference(TableName<T>());
+			
+			if (!table.Exists()) return;
+
+			var retrieve = TableOperation.Retrieve<T>(tenant, key);
+
+			var deleteEntity = table.Execute(retrieve).Result as T;
+
+
+			if (deleteEntity == null)
+				return;
+
+			var delete = TableOperation.Delete(deleteEntity);
+
+			table.Execute(delete);
+		}
+
+		static string TableName<T>()
+		{
+			return typeof(T).Name.Replace(".", "").Replace("_", "");
 		}
 	}
 }
