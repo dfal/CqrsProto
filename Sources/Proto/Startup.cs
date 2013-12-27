@@ -15,7 +15,7 @@ namespace Proto
 	{
 		public void Configuration(IAppBuilder app)
 		{
-			var storageConnectionString = "";
+			const string storageConnectionString = "DefaultEndpointsProtocol=https;AccountName=cqrsproto;AccountKey=XuOjnB4wdXqSI13r6FBAY8jdcb65qEDj+mTbnBMRNnn1+qM7rkCMPkx3jSsuxrkCm/4Ze0dDRWoaBMdNIzkKBQ==;";
 			var serviceBusSettings = new ServiceBusSettings();
 			new ServiceBusConfig(serviceBusSettings).Initialize();
 
@@ -39,8 +39,7 @@ namespace Proto
 		{
 			container.Register<IMessageSender>(
 				new TopicSender(serviceBusSettings, "proto/commands"));
-			container.Register<DocumentStore>()
-				.UsingConstructor(() => new DocumentStore("tenant", storageConnectionString));
+			container.Register<DocumentStore>(new DocumentStore("tenant", storageConnectionString));
 			
 			container.Register<IMetadataProvider, DummyMetadataProvider>();
 			container.Register<ISerializer, JsonSerializer>();
